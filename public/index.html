@@ -74,6 +74,17 @@
   .msg.ok { color: #16a34a; }
   .msg.err { color: var(--danger); }
   .muted { color: var(--muted); font-size: 0.8rem; }
+  .stock-input { width: 70px; }
+  .stock-input.dirty { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--bg-card)); }
+  .badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: var(--muted);
+    color: white;
+    margin-left: 6px;
+  }
 </style>
 </head>
 <body>
@@ -84,10 +95,14 @@
 
 <main>
   <section class="card">
-    <h2>商品一覧</h2>
+    <h2>商品一覧・在庫入力<span class="badge">毎日</span></h2>
+    <p class="muted">「在庫入力」欄に今日の在庫数を打ち込み、Enterキーで次の商品欄に移動できます。入力し終えたら一番下の「まとめて記録する」を押してください（未入力の行は記録されません）。</p>
     <div class="toolbar">
       <label>ジャンル絞り込み:
         <select id="genreFilter"><option value="">すべて</option></select>
+      </label>
+      <label>記録日:
+        <input type="date" id="bulkStockDate">
       </label>
       <button id="reloadBtn" type="button">再読み込み</button>
       <span class="muted" id="productCount"></span>
@@ -97,12 +112,17 @@
         <thead>
           <tr>
             <th>コード</th><th>商品名</th><th>ジャンル</th><th>温度帯</th>
-            <th>容器</th><th>容量</th><th>現行売値</th><th>現在庫</th><th>最終記録日</th>
+            <th>容器/容量</th><th>現行売値</th><th>前回在庫</th><th>最終記録日</th><th>在庫入力（今日）</th>
           </tr>
         </thead>
         <tbody id="productRows"></tbody>
       </table>
     </div>
+    <div class="toolbar" style="margin-top:12px; margin-bottom:0;">
+      <button id="bulkSaveBtn" type="button">まとめて記録する</button>
+      <span class="muted" id="bulkDirtyCount"></span>
+    </div>
+    <p class="msg" id="bulkStockMsg"></p>
   </section>
 
   <section class="card">
@@ -122,18 +142,7 @@
   </section>
 
   <section class="card">
-    <h2>在庫数を記録する</h2>
-    <form class="inline" id="stockForm">
-      <select id="stockProduct" required></select>
-      <input type="date" id="stockDate" required>
-      <input type="number" id="stockCount" placeholder="在庫数" min="0" required style="width:100px">
-      <button type="submit">記録する</button>
-    </form>
-    <p class="msg" id="stockMsg"></p>
-  </section>
-
-  <section class="card">
-    <h2>仕入れを記録する</h2>
+    <h2>仕入れを記録する<span class="badge">2週間に1回</span></h2>
     <form class="inline" id="purchaseForm">
       <select id="purchaseProduct" required></select>
       <input type="date" id="purchaseDate" required>
@@ -158,6 +167,20 @@ async function loadGenres() {
     genres.map((g) => `<option value="${g.genre_id}">${g.genre_name}</option>`).join('');
 }
 
+function updateDirtyCount() {
+  const n = document.querySelectorAll('.stock-input.dirty').length;
+  $('bulkDirtyCount').textContent = n > 0 ? `${n} 件 入力済み` : '';
+}
+
+function focusNextStockInput(current) {
+  const inputs = Array.from(document.querySelectorAll('.stock-input'));
+  const idx = inputs.indexOf(current);
+  if (idx >= 0 && idx < inputs.length - 1) {
+    inputs[idx + 1].focus();
+    inputs[idx + 1].select();
+  }
+}
+
 async function loadProducts() {
   const genreId = $('genreFilter').value;
   const url = genreId ? `/api/products?genre_id=${genreId}` : '/api/products';
@@ -166,23 +189,37 @@ async function loadProducts() {
   $('productCount').textContent = `${products.length} 件`;
   $('productRows').innerHTML = products.map((p) => {
     const lowStock = p.current_stock != null && p.current_stock <= 5;
+    const containerInfo = [p.container, p.volume_ml ? p.volume_ml + 'ml' : null].filter(Boolean).join(' ');
     return `<tr>
       <td>${p.product_code}</td>
       <td>${p.product_name}</td>
       <td>${p.genre_name ?? ''}</td>
       <td>${p.temp_zone ?? ''}</td>
-      <td>${p.container ?? ''}</td>
-      <td>${p.volume_ml ? p.volume_ml + 'ml' : ''}</td>
+      <td>${containerInfo}</td>
       <td>${p.current_price != null ? '¥' + p.current_price : '-'}</td>
       <td class="${lowStock ? 'stock-low' : ''}">${p.current_stock ?? '-'}</td>
       <td>${p.stock_recorded_at ?? '-'}</td>
+      <td><input type="number" class="stock-input" min="0" data-code="${p.product_code}" placeholder="${p.current_stock ?? ''}"></td>
     </tr>`;
   }).join('');
+
+  document.querySelectorAll('.stock-input').forEach((input) => {
+    input.addEventListener('input', () => {
+      input.classList.toggle('dirty', input.value !== '');
+      updateDirtyCount();
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        focusNextStockInput(input);
+      }
+    });
+  });
+  updateDirtyCount();
 
   const options = products
     .map((p) => `<option value="${p.product_code}">${p.product_code}: ${p.product_name}</option>`)
     .join('');
-  $('stockProduct').innerHTML = options;
   $('purchaseProduct').innerHTML = options;
 }
 
@@ -219,29 +256,46 @@ async function refreshAll() {
 $('reloadBtn').addEventListener('click', loadProducts);
 $('genreFilter').addEventListener('change', loadProducts);
 
-$('stockForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const msg = $('stockMsg');
-  msg.textContent = '送信中...';
+$('bulkSaveBtn').addEventListener('click', async () => {
+  const msg = $('bulkStockMsg');
+  const recordDate = $('bulkStockDate').value;
+  const dirtyInputs = Array.from(document.querySelectorAll('.stock-input.dirty'));
+
+  if (!recordDate) {
+    msg.textContent = '記録日を指定してください';
+    msg.className = 'msg err';
+    return;
+  }
+  if (dirtyInputs.length === 0) {
+    msg.textContent = '入力された在庫数がありません';
+    msg.className = 'msg err';
+    return;
+  }
+
+  msg.textContent = `送信中... (${dirtyInputs.length}件)`;
   msg.className = 'msg';
-  try {
-    const res = await fetch('/api/stock-records', {
+
+  const results = await Promise.allSettled(dirtyInputs.map((input) =>
+    fetch('/api/stock-records', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        product_code: Number($('stockProduct').value),
-        record_date: $('stockDate').value,
-        stock_count: Number($('stockCount').value),
+        product_code: Number(input.dataset.code),
+        record_date: recordDate,
+        stock_count: Number(input.value),
       }),
-    });
-    if (!res.ok) throw new Error((await res.json()).error || res.statusText);
-    msg.textContent = '記録しました';
+    }).then((res) => { if (!res.ok) throw new Error(`商品#${input.dataset.code}`); })
+  ));
+
+  const failed = results.filter((r) => r.status === 'rejected');
+  if (failed.length === 0) {
+    msg.textContent = `${dirtyInputs.length}件 記録しました`;
     msg.className = 'msg ok';
-    await loadProducts();
-  } catch (err) {
-    msg.textContent = 'エラー: ' + err.message;
+  } else {
+    msg.textContent = `${dirtyInputs.length - failed.length}件成功 / ${failed.length}件失敗`;
     msg.className = 'msg err';
   }
+  await loadProducts();
 });
 
 $('purchaseForm').addEventListener('submit', async (e) => {
@@ -270,7 +324,7 @@ $('purchaseForm').addEventListener('submit', async (e) => {
   }
 });
 
-$('stockDate').value = today();
+$('bulkStockDate').value = today();
 $('purchaseDate').value = today();
 refreshAll();
 </script>
