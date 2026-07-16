@@ -1,9 +1,10 @@
 # 購買部 在庫管理システム API仕様
 
-- Base URL（開発中）: `http://localhost:3000`
+- Base URL（本番・AWS）: `https://1acuynf6vk.execute-api.us-east-1.amazonaws.com`
+- Base URL（ローカル開発時）: `http://localhost:3000`
 - 全レスポンスは JSON
 - 日付は `YYYY-MM-DD` 形式の文字列
-- DB班のマスタCSV（`genre_master.csv` / `product_master.csv` / `price_revision.csv` / `purchase_history.csv` / `stock_record.csv`）をサーバー起動時に自動でSQLiteへ取り込み（`src/db.js`）
+- データストアはDynamoDB（本番・ローカルとも同じテーブルを参照）。DB班のマスタCSVは `scripts/seed-dynamodb.js` で投入済み
 
 ## ジャンル
 

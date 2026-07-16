@@ -1,31 +1,43 @@
-# AWSにやってほしいこと
+# AWS情報
 
-## 現状
+## 現状（デプロイ済み）
 
-- APIサーバー: Node.js + Express（`src/`）
-- DB: Node組み込みの `node:sqlite`（ネイティブビルド不要）、ファイルは `data/kobai.db` にローカル保存、**ネットワーク越しの共有は不可**
-- 起動方法: `npm install && npm start`（ローカルでのみ動作確認済み。デプロイは未着手）
+企画時の構成（API Gateway + Lambda + DynamoDB）で、②担当が実際にデプロイまで実施済み。
 
-企画段階では「複数人が同時に在庫を確認・更新するのでクラウド前提」としていたが、今のSQLite実装のままでは複数端末からの同時アクセスに対応できない。本番化にあたって以下を検討してほしい。
+- **API Gateway (HTTP API)**: Lambdaプロキシ統合、`ANY /{proxy+}`
+- **Lambda**: Node.js 20.x、Expressアプリを `@codegenie/serverless-express` でラップして実行（`src/lambda.js`）
+- **DynamoDB**: 5テーブル（オンデマンド課金）。ER図の5テーブルに対応
+  - `kobai-genres`（PK: `genre_id`）
+  - `kobai-products`（PK: `product_code`、GSI: `genre-index`）
+  - `kobai-price-revisions`（PK: `product_code`, SK: `effective_date`）
+  - `kobai-purchase-history`（PK: `product_code`, SK: `sort_key` = `purchase_date#purchase_id`）
+  - `kobai-stock-records`（PK: `product_code`, SK: `record_date`）
+- **IAM**: AWS Academy Learner Labの制約上、新規ロール作成はできないため、Lambda実行ロールは既存の `LabRole` を使用
+- **リージョン**: `us-east-1`
 
-## 決めてほしいこと
+マスタデータ（`db/master/*.csv`）は `scripts/seed-dynamodb.js` で投入済み。
 
-1. **デプロイ方式**
-   - 案A: 企画時のAWS構成（API Gateway + Lambda + DynamoDB）に合わせて書き換える
-   - 案B: 今のExpressアプリをそのまま使えるインフラ（EC2 / ECS Fargate / App Runner など）に乗せる
-   - どちらを採るかで、バックエンド側の改修量が大きく変わるため早めに方針を決めたい
-2. **DB移行**
-   - 案Aなら DynamoDB へのスキーマ移行（`db/master/` のCSV構造がベースになる）
-   - 案Bなら RDS等のマネージドSQL、もしくは SQLiteファイルをEFS等で永続化する方法を検討
-3. **AI（`ai/purchase_prediction.py`）の実行環境**
-   - Python + scikit-learn が動く環境が必要（Lambdaならレイヤー化、EC2/Fargateならそのまま動く）
-   - バッチ実行のタイミング（14日サイクルごと）をどう起動するか（EventBridge等）
-4. **環境変数・シークレット管理**
-   - 現状 `.env` 等は未使用。DB接続情報などが増えたら管理方法を決めたい
-5. **CI/CD**
-   - GitHubへのpushで自動デプロイするか、手動デプロイで進めるか
+## デプロイ方法（再デプロイ・チーム内共有用）
 
-## お願いしたいこと
+```bash
+aws configure   # AWS Academy Learner Lab の一時認証情報（Access Key/Secret/Session Token）を設定
+export AWS_REGION=us-east-1
+./deploy/create-tables.sh       # DynamoDBテーブル作成（存在すればスキップ）
+node scripts/seed-dynamodb.js   # マスタデータ投入
+./deploy/deploy.sh              # Lambda + API Gatewayを作成/更新
+```
 
-- 上記の方針が決まったら、バックエンド側（`src/db.js` のDBアクセス部分など）をどう改修すればいいか教えてほしい
-- 発表用のデモとして「動くこと」が最優先なので、無理にAWSのフル構成にこだわらず、時間が厳しければ案B（Express + マネージドDB）でシンプルに進める判断もあり
+`deploy.sh` は既存のLambda関数があれば `update-function-code` で更新するので、コード変更後の再デプロイもこのスクリプト1本でOK。
+
+## 重要な注意点（AWS Academy Learner Lab特有）
+
+- **認証情報は一時的**（数時間で失効）。Labセッションを開始し直したら `aws configure` からやり直しが必要
+- **Learner Labはセッション終了時にリソースが削除される場合がある**。発表前に一度 `deploy.sh` を再実行して動作確認しておくこと
+- IAMロールを新規作成できないため、権限が足りない操作（新しいマネージドポリシーのアタッチなど）が必要になったら要相談
+
+## 未確定・要検討
+
+- 現状は素のAWS CLIコマンドで構築（`deploy/`配下のシェルスクリプト）。今後インフラが複雑化するならSAM/CDK化を検討してもよいが、Academy LabはIAMロール作成が制限されているため、CDK bootstrapが失敗する可能性が高い点に注意
+- CI/CD（GitHub Actionsからの自動デプロイ）は未設定
+- カスタムドメイン・HTTPS証明書は未設定（API Gatewayのデフォルトエンドポイントをそのまま使用）
+- AI班の推奨購買数量をどう連携するか（[docs/ai.md](ai.md)）が固まったら、Lambda側にもエンドポイント追加が必要
