@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>購買部 在庫管理システム（確認用）</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --border: #d9dee3;
+    --muted: #6b7280;
+    --accent: #2563eb;
+    --danger: #dc2626;
+    --bg-card: #ffffff;
+    --bg-page: #f3f4f6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --border: #3a3f47;
+      --muted: #9aa1ab;
+      --bg-card: #1f2328;
+      --bg-page: #14171a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "Hiragino Kaku Gothic ProN", sans-serif;
+    background: var(--bg-page);
+    color: inherit;
+  }
+  header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 { margin: 0 0 4px; font-size: 1.3rem; }
+  header p { margin: 0; color: var(--muted); font-size: 0.85rem; }
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px;
+    display: grid;
+    gap: 20px;
+  }
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+  }
+  .card h2 { margin: 0 0 12px; font-size: 1rem; }
+  .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+  select, input, button {
+    font: inherit;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-card);
+    color: inherit;
+  }
+  button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+  button:hover { opacity: 0.9; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 600; }
+  .stock-low { color: var(--danger); font-weight: 600; }
+  .table-wrap { overflow-x: auto; max-height: 480px; overflow-y: auto; }
+  form.inline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .msg { font-size: 0.8rem; margin-top: 8px; }
+  .msg.ok { color: #16a34a; }
+  .msg.err { color: var(--danger); }
+  .muted { color: var(--muted); font-size: 0.8rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>購買部 在庫管理システム（確認用UI）</h1>
+  <p>src/routes 経由でDynamoDBのデータを直接確認するための簡易画面です。本番のUIはフロント担当が別途作成します。</p>
+</header>
+
+<main>
+  <section class="card">
+    <h2>商品一覧</h2>
+    <div class="toolbar">
+      <label>ジャンル絞り込み:
+        <select id="genreFilter"><option value="">すべて</option></select>
+      </label>
+      <button id="reloadBtn" type="button">再読み込み</button>
+      <span class="muted" id="productCount"></span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>コード</th><th>商品名</th><th>ジャンル</th><th>温度帯</th>
+            <th>容器</th><th>容量</th><th>現行売値</th><th>現在庫</th><th>最終記録日</th>
+          </tr>
+        </thead>
+        <tbody id="productRows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>AI推奨発注数（要購買のみ）</h2>
+    <p class="muted" id="recoNote"></p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>コード</th><th>商品名</th><th>現在庫</th><th>前サイクル消費量</th>
+            <th>予測消費量</th><th>推奨購買数量</th>
+          </tr>
+        </thead>
+        <tbody id="recoRows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>在庫数を記録する</h2>
+    <form class="inline" id="stockForm">
+      <select id="stockProduct" required></select>
+      <input type="date" id="stockDate" required>
+      <input type="number" id="stockCount" placeholder="在庫数" min="0" required style="width:100px">
+      <button type="submit">記録する</button>
+    </form>
+    <p class="msg" id="stockMsg"></p>
+  </section>
+
+  <section class="card">
+    <h2>仕入れを記録する</h2>
+    <form class="inline" id="purchaseForm">
+      <select id="purchaseProduct" required></select>
+      <input type="date" id="purchaseDate" required>
+      <input type="number" id="purchaseQty" placeholder="数量" min="1" required style="width:90px">
+      <input type="number" id="purchaseAmount" placeholder="金額（任意）" min="0" style="width:110px">
+      <button type="submit">記録する</button>
+    </form>
+    <p class="msg" id="purchaseMsg"></p>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const today = () => new Date().toISOString().slice(0, 10);
+
+let products = [];
+
+async function loadGenres() {
+  const genres = await (await fetch('/api/genres')).json();
+  const filter = $('genreFilter');
+  filter.innerHTML = '<option value="">すべて</option>' +
+    genres.map((g) => `<option value="${g.genre_id}">${g.genre_name}</option>`).join('');
+}
+
+async function loadProducts() {
+  const genreId = $('genreFilter').value;
+  const url = genreId ? `/api/products?genre_id=${genreId}` : '/api/products';
+  products = await (await fetch(url)).json();
+
+  $('productCount').textContent = `${products.length} 件`;
+  $('productRows').innerHTML = products.map((p) => {
+    const lowStock = p.current_stock != null && p.current_stock <= 5;
+    return `<tr>
+      <td>${p.product_code}</td>
+      <td>${p.product_name}</td>
+      <td>${p.genre_name ?? ''}</td>
+      <td>${p.temp_zone ?? ''}</td>
+      <td>${p.container ?? ''}</td>
+      <td>${p.volume_ml ? p.volume_ml + 'ml' : ''}</td>
+      <td>${p.current_price != null ? '¥' + p.current_price : '-'}</td>
+      <td class="${lowStock ? 'stock-low' : ''}">${p.current_stock ?? '-'}</td>
+      <td>${p.stock_recorded_at ?? '-'}</td>
+    </tr>`;
+  }).join('');
+
+  const options = products
+    .map((p) => `<option value="${p.product_code}">${p.product_code}: ${p.product_name}</option>`)
+    .join('');
+  $('stockProduct').innerHTML = options;
+  $('purchaseProduct').innerHTML = options;
+}
+
+async function loadRecommendations() {
+  const recos = await (await fetch('/api/recommendations')).json();
+  const nameOf = (code) => products.find((p) => p.product_code === code)?.product_name ?? `商品#${code}`;
+  const needBuy = recos.filter((r) => r.purchase_needed);
+
+  const note = $('recoNote');
+  if (recos.length === 0) {
+    note.textContent = 'まだAIの算出結果がありません（ai/purchase_prediction.py を実行するとここに反映されます）';
+  } else {
+    const generatedAt = new Date(recos[0].generated_at).toLocaleString('ja-JP');
+    note.textContent = `算出日時: ${generatedAt} ／ 要購買 ${needBuy.length}品目`
+      + '　※現時点は在庫の日次記録が本番でまだ蓄積されていないため、AI班のサンプルデータに基づく参考値です';
+  }
+
+  $('recoRows').innerHTML = needBuy.map((r) => `<tr>
+    <td>${r.product_code}</td>
+    <td>${nameOf(r.product_code)}</td>
+    <td>${r.current_stock ?? '-'}</td>
+    <td>${r.last_cycle_consumption ?? '-'}</td>
+    <td>${r.predicted_consumption ?? '-'}</td>
+    <td><strong>${r.recommended_qty}</strong></td>
+  </tr>`).join('');
+}
+
+async function refreshAll() {
+  await loadGenres();
+  await loadProducts();
+  await loadRecommendations();
+}
+
+$('reloadBtn').addEventListener('click', loadProducts);
+$('genreFilter').addEventListener('change', loadProducts);
+
+$('stockForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const msg = $('stockMsg');
+  msg.textContent = '送信中...';
+  msg.className = 'msg';
+  try {
+    const res = await fetch('/api/stock-records', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        product_code: Number($('stockProduct').value),
+        record_date: $('stockDate').value,
+        stock_count: Number($('stockCount').value),
+      }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || res.statusText);
+    msg.textContent = '記録しました';
+    msg.className = 'msg ok';
+    await loadProducts();
+  } catch (err) {
+    msg.textContent = 'エラー: ' + err.message;
+    msg.className = 'msg err';
+  }
+});
+
+$('purchaseForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const msg = $('purchaseMsg');
+  msg.textContent = '送信中...';
+  msg.className = 'msg';
+  try {
+    const amount = $('purchaseAmount').value;
+    const res = await fetch('/api/purchases', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        product_code: Number($('purchaseProduct').value),
+        purchase_date: $('purchaseDate').value,
+        quantity: Number($('purchaseQty').value),
+        amount: amount ? Number(amount) : null,
+      }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || res.statusText);
+    msg.textContent = '記録しました';
+    msg.className = 'msg ok';
+  } catch (err) {
+    msg.textContent = 'エラー: ' + err.message;
+    msg.className = 'msg err';
+  }
+});
+
+$('stockDate').value = today();
+$('purchaseDate').value = today();
+refreshAll();
+</script>
+</body>
+</html>

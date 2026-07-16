@@ -60,6 +60,8 @@ npm start
 
 動作確認: `curl http://localhost:3000/api/health`
 
+起動すると `http://localhost:3000/` に確認用の簡易UI（`public/index.html`）も配信される（商品一覧・在庫/仕入れ記録フォーム・AI推奨発注数の表示）。本番のUIはフロント担当が別途作成する想定。
+
 ## AWSへのデプロイ
 
 [docs/aws-todo.md](docs/aws-todo.md) を参照。
@@ -67,5 +69,5 @@ npm start
 ## 現在の状態
 
 - API・DynamoDBスキーマ・マスタデータ投入・AWSデプロイまで実装・動作確認済み
-- AI予測（`ai/purchase_prediction.py`）はまだAPIと未連携（CSV入出力の独立スクリプト）
-- フロントは未着手
+- AI予測（`ai/purchase_prediction.py`）はAPIと連携済み（`POST /api/recommendations`）。ただし本番の在庫記録がまだ蓄積されていないため、現状はAI班のダミーデータに基づく参考値（詳細: [docs/ai.md](docs/ai.md)）
+- 確認用の簡易UIあり（`public/index.html`）。本番のフロントは未着手

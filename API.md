@@ -214,7 +214,44 @@
 
 ---
 
+## AI推奨発注数
+
+AI班の `ai/purchase_prediction.py` が算出した推奨購買数量を保存・取得する。詳細は[docs/ai.md](docs/ai.md)参照。
+
+### GET /api/recommendations
+推奨購買数量が多い順の一覧。
+
+```json
+[
+  {
+    "product_code": 29,
+    "current_stock": 5,
+    "last_cycle_consumption": 49,
+    "predicted_consumption": 17.8,
+    "recommended_qty": 17,
+    "purchase_needed": true,
+    "generated_at": "2026-07-16T16:43:51.323Z"
+  }
+]
+```
+
+### POST /api/recommendations
+AI班のバッチスクリプトが算出結果をまとめて書き込む（商品ごとに1レコードで上書き）。
+
+リクエスト:
+```json
+{
+  "items": [
+    { "product_code": 29, "current_stock": 5, "last_cycle_consumption": 49, "predicted_consumption": 17.8, "recommended_qty": 17, "purchase_needed": true }
+  ]
+}
+```
+
+レスポンス (201): `{ "saved": 48, "generated_at": "2026-07-16T16:43:51.323Z" }`
+
+---
+
 ## 未確定・要相談
 
-- AI予測結果（`recommended_purchase.csv` の内容: 予測消費量・推奨購買数量）を受け取る/返すエンドポイントは未実装。AI班のスクリプト（`purchase_prediction.py`）は現状CSV入出力の独立バッチで、APIとは未連携
 - 在庫記録は日単位（`record_date` は日付のみ）
+- AI推奨値は現状ダミーデータに基づく参考値（本番の在庫記録がまだ蓄積されていないため。詳細は[docs/ai.md](docs/ai.md)）

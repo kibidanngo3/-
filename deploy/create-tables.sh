@@ -53,4 +53,13 @@ if ! table_exists kobai-stock-records; then
     --region "$REGION" --no-cli-pager
 fi
 
+if ! table_exists kobai-recommendations; then
+  aws dynamodb create-table \
+    --table-name kobai-recommendations \
+    --attribute-definitions AttributeName=product_code,AttributeType=N \
+    --key-schema AttributeName=product_code,KeyType=HASH \
+    --billing-mode PAY_PER_REQUEST \
+    --region "$REGION" --no-cli-pager
+fi
+
 echo "DynamoDBテーブル確認・作成完了"

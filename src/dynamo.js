@@ -20,6 +20,7 @@ const TABLES = {
   priceRevisions: process.env.PRICE_REVISIONS_TABLE || 'kobai-price-revisions',
   purchaseHistory: process.env.PURCHASE_HISTORY_TABLE || 'kobai-purchase-history',
   stockRecords: process.env.STOCK_RECORDS_TABLE || 'kobai-stock-records',
+  recommendations: process.env.RECOMMENDATIONS_TABLE || 'kobai-recommendations',
 };
 
 // ============================================================
@@ -179,8 +180,22 @@ async function putStockRecord(record) {
   await doc.send(new PutCommand({ TableName: TABLES.stockRecords, Item: record }));
 }
 
+// ============================================================
+// AI推奨購買数量（PK: product_code、AI班のバッチが書き込む）
+// ============================================================
+async function listRecommendations() {
+  const { Items } = await doc.send(new ScanCommand({ TableName: TABLES.recommendations }));
+  return (Items || []).sort((a, b) => b.recommended_qty - a.recommended_qty);
+}
+
+async function putRecommendation(rec) {
+  await doc.send(new PutCommand({ TableName: TABLES.recommendations, Item: rec }));
+}
+
 module.exports = {
   TABLES,
+  listRecommendations,
+  putRecommendation,
   listGenres,
   putGenre,
   getGenre,

@@ -63,23 +63,38 @@
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
 
+import os
+import sys
 import warnings
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import requests
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import LeaveOneOut, cross_val_score
 
 warnings.filterwarnings("ignore")
 
+# Windowsコンソール（cp932）では絵文字・罫線・emダッシュ等が出力できないため、
+# stdout/stderrをUTF-8に固定する
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 
 # ============================================================
 # 設定
 # ============================================================
-PURCHASE_CSV = "dummy_purchase_history.csv"
-STOCK_CSV = "dummy_stock_record.csv"
+# 本番のstock_recordはまだ実績が蓄積されていない（在庫を毎日記録する運用が
+# 始まっていないため）。運用開始後は環境変数で実データCSVに切り替える。
+PURCHASE_CSV = os.environ.get("KOBAI_PURCHASE_CSV", "dummy_purchase_history.csv")
+STOCK_CSV = os.environ.get("KOBAI_STOCK_CSV", "dummy_stock_record.csv")
 OUTPUT_CSV = "recommended_purchase.csv"
+
+# 算出結果を書き込むAPI（バックエンド班のkobai-bu-api）
+# 未設定ならAPI連携をスキップしてCSV出力のみ行う
+API_BASE_URL = os.environ.get("KOBAI_API_BASE_URL", "")
 
 SAFETY_STOCK_RATIO = 0.20   # 安全在庫: 予測消費量の 20%
 MIN_ORDER_UNIT = 1          # 最小発注単位 (個)
@@ -326,6 +341,32 @@ def show_feature_importance(model: RandomForestRegressor) -> None:
 
 
 # ============================================================
+# Step 7: 算出結果をAPIへ送信
+# ============================================================
+def post_recommendations(result_df: pd.DataFrame) -> None:
+    if not API_BASE_URL:
+        print("\n  [Step 7] KOBAI_API_BASE_URL未設定のためAPI送信はスキップ")
+        return
+
+    items = [
+        {
+            "product_code": int(row["商品コード"]),
+            "current_stock": int(row["現在庫"]),
+            "last_cycle_consumption": float(row["前サイクル消費量"]),
+            "predicted_consumption": float(row["予測消費量_次14日"]),
+            "recommended_qty": int(row["推奨購買数量"]),
+            "purchase_needed": row["購買要否"] == "要購買",
+        }
+        for _, row in result_df.iterrows()
+    ]
+
+    url = API_BASE_URL.rstrip("/") + "/api/recommendations"
+    res = requests.post(url, json={"items": items}, timeout=15)
+    res.raise_for_status()
+    print(f"\n  [Step 7] APIへ送信完了: {url} ({len(items)}件)")
+
+
+# ============================================================
 # メイン
 # ============================================================
 def main():
@@ -381,6 +422,9 @@ def main():
 
     # ── 特徴量重要度 ────────────────────────────────────────
     show_feature_importance(model)
+
+    # ── API送信 ──────────────────────────────────────────────
+    post_recommendations(result_df)
 
     # ── サマリ統計 ──────────────────────────────────────────
     need_buy = result_df[result_df["購買要否"] == "要購買"]
