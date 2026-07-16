@@ -2,109 +2,245 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<title>購買部 在庫管理システム（確認用）</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>購買部 在庫管理システム</title>
 <style>
   :root {
-    color-scheme: light dark;
-    --border: #d9dee3;
-    --muted: #6b7280;
-    --accent: #2563eb;
-    --danger: #dc2626;
-    --bg-card: #ffffff;
-    --bg-page: #f3f4f6;
+    color-scheme: light;
+    --surface-1:      #fcfcfb;
+    --page-plane:     #f9f9f7;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --gridline:       #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --series-blue:    #2a78d6;
+    --series-blue-wash: rgba(42,120,214,0.10);
+    --good:     #0ca30c;
+    --warning:  #fab219;
+    --serious:  #ec835a;
+    --critical: #d03b3b;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --border: #3a3f47;
-      --muted: #9aa1ab;
-      --bg-card: #1f2328;
-      --bg-page: #14171a;
+      color-scheme: dark;
+      --surface-1:      #1a1a19;
+      --page-plane:     #0d0d0d;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --gridline:       #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --series-blue:    #3987e5;
+      --series-blue-wash: rgba(57,135,229,0.14);
     }
   }
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    font-family: -apple-system, "Segoe UI", "Hiragino Kaku Gothic ProN", sans-serif;
-    background: var(--bg-page);
-    color: inherit;
+    font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Kaku Gothic ProN", sans-serif;
+    background: var(--page-plane);
+    color: var(--text-primary);
   }
-  header {
-    padding: 20px 24px;
+  a { color: var(--series-blue); }
+
+  /* ---------- topbar ---------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 28px;
+    background: var(--surface-1);
     border-bottom: 1px solid var(--border);
   }
-  header h1 { margin: 0 0 4px; font-size: 1.3rem; }
-  header p { margin: 0; color: var(--muted); font-size: 0.85rem; }
-  main {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 24px;
-    display: grid;
-    gap: 20px;
+  .topbar .brand { display: flex; flex-direction: column; gap: 2px; }
+  .topbar h1 { margin: 0; font-size: 1.05rem; font-weight: 700; }
+  .topbar .sub { margin: 0; font-size: 0.78rem; color: var(--text-muted); }
+  .status {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.78rem; color: var(--text-secondary);
+    padding: 5px 12px; border: 1px solid var(--border); border-radius: 999px;
   }
+  .status .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); flex: none; }
+  .status.online .dot { background: var(--good); }
+  .status.offline .dot { background: var(--critical); }
+
+  main { max-width: 1180px; margin: 0 auto; padding: 24px 28px 60px; display: grid; gap: 22px; }
+
+  /* ---------- stat tiles ---------- */
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .stat-tile {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .stat-tile .label { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 8px; }
+  .stat-tile .value { font-size: 1.9rem; font-weight: 600; line-height: 1; }
+  .stat-tile .value .unit { font-size: 0.95rem; font-weight: 500; color: var(--text-secondary); margin-left: 2px; }
+  .stat-tile.warn .value { color: var(--critical); }
+
+  /* ---------- section cards ---------- */
   .card {
-    background: var(--bg-card);
+    background: var(--surface-1);
     border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 18px 20px;
+    border-radius: 12px;
+    padding: 20px 22px;
   }
-  .card h2 { margin: 0 0 12px; font-size: 1rem; }
-  .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
-  select, input, button {
-    font: inherit;
-    padding: 6px 10px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: var(--bg-card);
-    color: inherit;
-  }
-  button {
-    background: var(--accent);
-    color: white;
-    border: none;
-    cursor: pointer;
-  }
-  button:hover { opacity: 0.9; }
-  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
-  th { color: var(--muted); font-weight: 600; }
-  .stock-low { color: var(--danger); font-weight: 600; }
-  .table-wrap { overflow-x: auto; max-height: 480px; overflow-y: auto; }
-  form.inline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  .msg { font-size: 0.8rem; margin-top: 8px; }
-  .msg.ok { color: #16a34a; }
-  .msg.err { color: var(--danger); }
-  .muted { color: var(--muted); font-size: 0.8rem; }
-  .stock-input { width: 70px; }
-  .stock-input.dirty { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--bg-card)); }
+  .card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+  .card-head h2 { margin: 0; font-size: 1.02rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .card-desc { margin: 4px 0 14px; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5; }
   .badge {
-    display: inline-block;
-    font-size: 0.7rem;
-    padding: 1px 8px;
-    border-radius: 999px;
-    background: var(--muted);
-    color: white;
-    margin-left: 6px;
+    display: inline-block; font-size: 0.68rem; font-weight: 600;
+    padding: 2px 9px; border-radius: 999px;
+    background: var(--series-blue-wash); color: var(--series-blue);
+    border: 1px solid transparent;
+  }
+  .badge.muted { background: transparent; color: var(--text-muted); border-color: var(--border); }
+
+  /* ---------- controls ---------- */
+  .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+  select, input, button {
+    font: inherit; font-size: 0.85rem;
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface-1);
+    color: var(--text-primary);
+  }
+  input::placeholder { color: var(--text-muted); }
+  button {
+    background: var(--series-blue); color: white; border: none; cursor: pointer; font-weight: 600;
+    padding: 8px 16px;
+  }
+  button:hover { filter: brightness(1.06); }
+  button:active { filter: brightness(0.96); }
+  button.secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); font-weight: 500; }
+
+  /* ---------- table ---------- */
+  table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+  th, td { text-align: left; padding: 8px 10px; white-space: nowrap; }
+  thead th {
+    position: sticky; top: 0; background: var(--surface-1);
+    color: var(--text-muted); font-weight: 600; font-size: 0.72rem;
+    text-transform: uppercase; letter-spacing: 0.02em;
+    border-bottom: 1px solid var(--gridline);
+  }
+  tbody tr { border-bottom: 1px solid var(--gridline); }
+  tbody tr:hover { background: var(--series-blue-wash); }
+  td.num { font-variant-numeric: tabular-nums; }
+  .table-wrap { overflow: auto; max-height: 460px; border-radius: 8px; }
+
+  .stock-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 0.72rem; font-weight: 600; color: var(--critical);
+  }
+  .stock-badge::before { content: "●"; font-size: 0.55rem; }
+
+  form.inline { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .msg { font-size: 0.8rem; margin-top: 10px; min-height: 1.1em; }
+  .msg.ok { color: var(--good); }
+  .msg.err { color: var(--critical); }
+  .muted { color: var(--text-muted); font-size: 0.8rem; }
+
+  .stock-input { width: 68px; text-align: right; font-variant-numeric: tabular-nums; }
+  .stock-input.dirty { border-color: var(--series-blue); background: var(--series-blue-wash); font-weight: 600; }
+
+  /* ---------- bar chart ---------- */
+  .chart { display: grid; gap: 10px; margin: 4px 0 20px; }
+  .bar-row { display: grid; grid-template-columns: 168px 1fr 48px; align-items: center; gap: 10px; }
+  .bar-row .bar-name {
+    font-size: 0.8rem; color: var(--text-secondary);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .bar-track {
+    position: relative; height: 22px;
+    background-image: linear-gradient(to right, var(--gridline) 1px, transparent 1px);
+    background-size: 25% 100%;
+    border-bottom: 1px solid var(--baseline);
+  }
+  .bar-fill {
+    position: absolute; left: 0; top: 3px; height: 16px;
+    background: var(--series-blue);
+    border-radius: 4px 4px 0 0;
+    min-width: 3px;
+    cursor: pointer;
+    transition: filter 0.1s;
+  }
+  .bar-fill:hover, .bar-fill:focus-visible { filter: brightness(1.12); outline: none; }
+  .bar-row .bar-value {
+    font-size: 0.82rem; font-weight: 600; text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tooltip {
+    position: fixed; z-index: 50; pointer-events: none;
+    background: var(--text-primary); color: var(--page-plane);
+    font-size: 0.76rem; line-height: 1.5;
+    padding: 8px 11px; border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+    opacity: 0; transform: translateY(4px);
+    transition: opacity 0.1s, transform 0.1s;
+    max-width: 220px;
+  }
+  .tooltip.show { opacity: 1; transform: translateY(0); }
+  .tooltip strong { display: block; margin-bottom: 3px; font-weight: 700; }
+
+  .empty-state {
+    padding: 30px 10px; text-align: center; color: var(--text-muted); font-size: 0.85rem;
+  }
+
+  footer {
+    max-width: 1180px; margin: 0 auto; padding: 0 28px 40px;
+    color: var(--text-muted); font-size: 0.75rem; line-height: 1.6;
+  }
+
+  @media (max-width: 860px) {
+    .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    .bar-row { grid-template-columns: 100px 1fr 40px; }
+    main, footer, .topbar { padding-left: 16px; padding-right: 16px; }
   }
 </style>
 </head>
 <body>
-<header>
-  <h1>購買部 在庫管理システム（確認用UI）</h1>
-  <p>src/routes 経由でDynamoDBのデータを直接確認するための簡易画面です。本番のUIはフロント担当が別途作成します。</p>
-</header>
+
+<div class="topbar">
+  <div class="brand">
+    <h1>購買部 在庫管理システム</h1>
+    <p class="sub">在庫入力・仕入れ記録・AI推奨発注数を1画面で確認</p>
+  </div>
+  <div class="status" id="apiStatus"><span class="dot"></span><span id="apiStatusText">接続確認中</span></div>
+</div>
 
 <main>
+
+  <div class="stat-grid">
+    <div class="stat-tile">
+      <div class="label">商品点数</div>
+      <div class="value" id="statProducts">–</div>
+    </div>
+    <div class="stat-tile">
+      <div class="label">本日の在庫記録済み</div>
+      <div class="value" id="statRecordedToday">–</div>
+    </div>
+    <div class="stat-tile" id="statNeedBuyTile">
+      <div class="label">要購買品目</div>
+      <div class="value" id="statNeedBuy">–</div>
+    </div>
+    <div class="stat-tile">
+      <div class="label">推奨発注合計数</div>
+      <div class="value" id="statTotalQty">–</div>
+    </div>
+  </div>
+
   <section class="card">
-    <h2>商品一覧・在庫入力<span class="badge">毎日</span></h2>
-    <p class="muted">「在庫入力」欄に今日の在庫数を打ち込み、Enterキーで次の商品欄に移動できます。入力し終えたら一番下の「まとめて記録する」を押してください（未入力の行は記録されません）。</p>
+    <div class="card-head">
+      <h2>商品一覧・在庫入力 <span class="badge">毎日</span></h2>
+    </div>
+    <p class="card-desc">「在庫入力」欄に今日の在庫数を打ち込み、Enterキーで次の商品欄に移動できます。入力し終えたら「まとめて記録する」を押してください（未入力の行はスキップされます）。</p>
     <div class="toolbar">
-      <label>ジャンル絞り込み:
-        <select id="genreFilter"><option value="">すべて</option></select>
-      </label>
-      <label>記録日:
-        <input type="date" id="bulkStockDate">
-      </label>
-      <button id="reloadBtn" type="button">再読み込み</button>
+      <label>ジャンル: <select id="genreFilter"><option value="">すべて</option></select></label>
+      <label>記録日: <input type="date" id="bulkStockDate"></label>
+      <button type="button" class="secondary" id="reloadBtn">再読み込み</button>
       <span class="muted" id="productCount"></span>
     </div>
     <div class="table-wrap">
@@ -118,22 +254,27 @@
         <tbody id="productRows"></tbody>
       </table>
     </div>
-    <div class="toolbar" style="margin-top:12px; margin-bottom:0;">
-      <button id="bulkSaveBtn" type="button">まとめて記録する</button>
+    <div class="toolbar" style="margin-top:14px; margin-bottom:0;">
+      <button type="button" id="bulkSaveBtn">まとめて記録する</button>
       <span class="muted" id="bulkDirtyCount"></span>
     </div>
     <p class="msg" id="bulkStockMsg"></p>
   </section>
 
   <section class="card">
-    <h2>AI推奨発注数（要購買のみ）</h2>
-    <p class="muted" id="recoNote"></p>
+    <div class="card-head">
+      <h2>AI推奨発注数 <span class="badge muted">要購買のみ</span></h2>
+    </div>
+    <p class="card-desc" id="recoNote"></p>
+
+    <div class="chart" id="recoChart"></div>
+
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
             <th>コード</th><th>商品名</th><th>現在庫</th><th>前サイクル消費量</th>
-            <th>予測消費量</th><th>推奨購買数量</th>
+            <th>予測消費量</th><th>今回の発注数</th>
           </tr>
         </thead>
         <tbody id="recoRows"></tbody>
@@ -142,23 +283,62 @@
   </section>
 
   <section class="card">
-    <h2>仕入れを記録する<span class="badge">2週間に1回</span></h2>
+    <div class="card-head">
+      <h2>仕入れを記録する <span class="badge">2週間に1回</span></h2>
+    </div>
     <form class="inline" id="purchaseForm">
       <select id="purchaseProduct" required></select>
       <input type="date" id="purchaseDate" required>
       <input type="number" id="purchaseQty" placeholder="数量" min="1" required style="width:90px">
-      <input type="number" id="purchaseAmount" placeholder="金額（任意）" min="0" style="width:110px">
+      <input type="number" id="purchaseAmount" placeholder="金額（任意）" min="0" style="width:120px">
       <button type="submit">記録する</button>
     </form>
     <p class="msg" id="purchaseMsg"></p>
   </section>
+
 </main>
+
+<footer>
+  購買部 食品ロス削減・在庫管理支援システム（②バックエンド担当による確認用UI）／ データはDynamoDBに直接接続しています。
+</footer>
+
+<div class="tooltip" id="tooltip"></div>
 
 <script>
 const $ = (id) => document.getElementById(id);
 const today = () => new Date().toISOString().slice(0, 10);
+const tooltip = $('tooltip');
 
 let products = [];
+
+function showTooltip(evt, html) {
+  tooltip.innerHTML = html;
+  tooltip.classList.add('show');
+  moveTooltip(evt);
+}
+function moveTooltip(evt) {
+  const pad = 14;
+  let x = evt.clientX + pad;
+  let y = evt.clientY + pad;
+  if (x + 230 > window.innerWidth) x = evt.clientX - 230 - pad;
+  if (y + 90 > window.innerHeight) y = evt.clientY - 90 - pad;
+  tooltip.style.left = x + 'px';
+  tooltip.style.top = y + 'px';
+}
+function hideTooltip() { tooltip.classList.remove('show'); }
+
+async function checkApiStatus() {
+  const el = $('apiStatus');
+  try {
+    const res = await fetch('/api/health');
+    if (!res.ok) throw new Error();
+    el.className = 'status online';
+    $('apiStatusText').textContent = 'API接続中';
+  } catch {
+    el.className = 'status offline';
+    $('apiStatusText').textContent = 'API接続エラー';
+  }
+}
 
 async function loadGenres() {
   const genres = await (await fetch('/api/genres')).json();
@@ -187,17 +367,25 @@ async function loadProducts() {
   products = await (await fetch(url)).json();
 
   $('productCount').textContent = `${products.length} 件`;
+  $('statProducts').innerHTML = `${products.length}<span class="unit">件</span>`;
+
+  const recordedToday = products.filter((p) => p.stock_recorded_at === $('bulkStockDate').value).length;
+  $('statRecordedToday').innerHTML = `${recordedToday}<span class="unit">/ ${products.length}</span>`;
+
   $('productRows').innerHTML = products.map((p) => {
     const lowStock = p.current_stock != null && p.current_stock <= 5;
     const containerInfo = [p.container, p.volume_ml ? p.volume_ml + 'ml' : null].filter(Boolean).join(' ');
+    const stockCell = lowStock
+      ? `<span class="stock-badge">${p.current_stock} 残りわずか</span>`
+      : (p.current_stock ?? '-');
     return `<tr>
-      <td>${p.product_code}</td>
+      <td class="num">${p.product_code}</td>
       <td>${p.product_name}</td>
       <td>${p.genre_name ?? ''}</td>
       <td>${p.temp_zone ?? ''}</td>
       <td>${containerInfo}</td>
-      <td>${p.current_price != null ? '¥' + p.current_price : '-'}</td>
-      <td class="${lowStock ? 'stock-low' : ''}">${p.current_stock ?? '-'}</td>
+      <td class="num">${p.current_price != null ? '¥' + p.current_price : '-'}</td>
+      <td class="num">${stockCell}</td>
       <td>${p.stock_recorded_at ?? '-'}</td>
       <td><input type="number" class="stock-input" min="0" data-code="${p.product_code}" placeholder="${p.current_stock ?? ''}"></td>
     </tr>`;
@@ -223,10 +411,50 @@ async function loadProducts() {
   $('purchaseProduct').innerHTML = options;
 }
 
+function renderChart(items, nameOf) {
+  const chart = $('recoChart');
+  if (items.length === 0) {
+    chart.innerHTML = '';
+    return;
+  }
+  const top = items.slice(0, 8);
+  const max = Math.max(...top.map((r) => r.recommended_qty), 1);
+
+  chart.innerHTML = top.map((r, i) => {
+    const pct = Math.max((r.recommended_qty / max) * 100, 3);
+    return `<div class="bar-row">
+      <div class="bar-name" title="${nameOf(r.product_code)}">${nameOf(r.product_code)}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${pct}%" tabindex="0" data-idx="${i}"></div>
+      </div>
+      <div class="bar-value">${r.recommended_qty}</div>
+    </div>`;
+  }).join('');
+
+  chart.querySelectorAll('.bar-fill').forEach((el, i) => {
+    const r = top[i];
+    const html = `<strong>${nameOf(r.product_code)}</strong>
+      現在庫: ${r.current_stock ?? '-'} 個<br>
+      前サイクル消費量: ${r.last_cycle_consumption ?? '-'}<br>
+      予測消費量: ${r.predicted_consumption ?? '-'}<br>
+      今回の発注数: ${r.recommended_qty} 個`;
+    el.addEventListener('mouseenter', (e) => showTooltip(e, html));
+    el.addEventListener('mousemove', moveTooltip);
+    el.addEventListener('mouseleave', hideTooltip);
+    el.addEventListener('focus', (e) => showTooltip(e, html));
+    el.addEventListener('blur', hideTooltip);
+  });
+}
+
 async function loadRecommendations() {
   const recos = await (await fetch('/api/recommendations')).json();
   const nameOf = (code) => products.find((p) => p.product_code === code)?.product_name ?? `商品#${code}`;
-  const needBuy = recos.filter((r) => r.purchase_needed);
+  const needBuy = recos.filter((r) => r.purchase_needed).sort((a, b) => b.recommended_qty - a.recommended_qty);
+
+  $('statNeedBuy').innerHTML = `${needBuy.length}<span class="unit">品目</span>`;
+  $('statNeedBuyTile').classList.toggle('warn', needBuy.length > 0);
+  const totalQty = needBuy.reduce((sum, r) => sum + r.recommended_qty, 0);
+  $('statTotalQty').innerHTML = `${totalQty}<span class="unit">個</span>`;
 
   const note = $('recoNote');
   if (recos.length === 0) {
@@ -237,17 +465,26 @@ async function loadRecommendations() {
       + '　※現時点は在庫の日次記録が本番でまだ蓄積されていないため、AI班のサンプルデータに基づく参考値です';
   }
 
-  $('recoRows').innerHTML = needBuy.map((r) => `<tr>
-    <td>${r.product_code}</td>
-    <td>${nameOf(r.product_code)}</td>
-    <td>${r.current_stock ?? '-'}</td>
-    <td>${r.last_cycle_consumption ?? '-'}</td>
-    <td>${r.predicted_consumption ?? '-'}</td>
-    <td><strong>${r.recommended_qty}</strong></td>
-  </tr>`).join('');
+  renderChart(needBuy, nameOf);
+
+  if (needBuy.length === 0) {
+    $('recoRows').innerHTML = '';
+    $('recoRows').closest('.table-wrap').insertAdjacentHTML('beforeend', '');
+  }
+  $('recoRows').innerHTML = needBuy.length
+    ? needBuy.map((r) => `<tr>
+        <td class="num">${r.product_code}</td>
+        <td>${nameOf(r.product_code)}</td>
+        <td class="num">${r.current_stock ?? '-'}</td>
+        <td class="num">${r.last_cycle_consumption ?? '-'}</td>
+        <td class="num">${r.predicted_consumption ?? '-'}</td>
+        <td class="num"><strong>${r.recommended_qty}</strong></td>
+      </tr>`).join('')
+    : '<tr><td colspan="6" class="empty-state">現時点で発注が必要な商品はありません</td></tr>';
 }
 
 async function refreshAll() {
+  await checkApiStatus();
   await loadGenres();
   await loadProducts();
   await loadRecommendations();
@@ -255,6 +492,7 @@ async function refreshAll() {
 
 $('reloadBtn').addEventListener('click', loadProducts);
 $('genreFilter').addEventListener('change', loadProducts);
+$('bulkStockDate').addEventListener('change', loadProducts);
 
 $('bulkSaveBtn').addEventListener('click', async () => {
   const msg = $('bulkStockMsg');
