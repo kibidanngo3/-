@@ -105,7 +105,7 @@ DB_POOL_MAX=5
 | ステージ | `$default` |
 | 自動デプロイ | 有効 |
 
-全APIルート（`API.md`参照）をLambda統合に紐づける。書き込み系API（POST/PUT/DELETE）は認証が無いままインターネットに公開される点に留意（[docs/aws-todo.md](aws-todo.md)の課題）。
+全APIルート（[API.md](API.md)参照）をLambda統合に紐づける。書き込み系API（POST/PUT/DELETE）は認証が無いままインターネットに公開される点に留意（[aws-todo.md](aws-todo.md)の課題）。
 
 呼び出しURL例:
 

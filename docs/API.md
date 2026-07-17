@@ -4,7 +4,7 @@
 - Base URL（ローカル開発時）: `http://localhost:3000`
 - 全レスポンスは JSON
 - 日付は `YYYY-MM-DD` 形式の文字列
-- データストアはAmazon RDS for PostgreSQL（全API移行・本番デプロイ済み。`src/postgres.js`、Lambdaは VPC内 → RDS）。DynamoDB版は`src/dynamo.js`にロールバック用として残置（[docs/rds-migration.md](docs/rds-migration.md)参照）
+- データストアはAmazon RDS for PostgreSQL（全API移行・本番デプロイ済み。`src/postgres.js`、Lambdaは VPC内 → RDS）。DynamoDB版は`src/dynamo.js`にロールバック用として残置（[rds-migration.md](rds-migration.md)参照）
 - DB班のマスタCSVは `npm run db:init && npm run db:seed` でRDSへ投入する
 
 ## ジャンル
@@ -217,7 +217,7 @@
 
 ## AI推奨発注数
 
-AI班の `ai/purchase_prediction.py` が算出した推奨購買数量を保存・取得する。詳細は[docs/ai.md](docs/ai.md)参照。
+AI班の `ai/purchase_prediction.py` が算出した推奨購買数量を保存・取得する。詳細は[ai.md](ai.md)参照。
 
 ### GET /api/recommendations
 推奨購買数量が多い順の一覧。
@@ -255,4 +255,4 @@ AI班のバッチスクリプトが算出結果をまとめて書き込む（商
 ## 未確定・要相談
 
 - 在庫記録は日単位（`record_date` は日付のみ）
-- AI推奨値は現状ダミーデータに基づく参考値（本番の在庫記録がまだ蓄積されていないため。詳細は[docs/ai.md](docs/ai.md)）
+- AI推奨値は現状ダミーデータに基づく参考値（本番の在庫記録がまだ蓄積されていないため。詳細は[ai.md](ai.md)）
