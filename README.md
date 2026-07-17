@@ -71,3 +71,16 @@ npm start
 - API・DynamoDBスキーマ・マスタデータ投入・AWSデプロイまで実装・動作確認済み
 - AI予測（`ai/purchase_prediction.py`）はAPIと連携済み（`POST /api/recommendations`）。ただし本番の在庫記録がまだ蓄積されていないため、現状はAI班のダミーデータに基づく参考値（詳細: [docs/ai.md](docs/ai.md)）
 - 確認用の簡易UIあり（`public/index.html`）。本番のフロントは未着手
+
+## RDS移行状況
+
+既存APIをDynamoDBからAmazon RDS for PostgreSQLへ段階的に移行中。
+
+移行・デプロイ手順: [docs/rds-migration.md](docs/rds-migration.md)
+
+- `GET /api/products` は `src/postgres.js` を使用するRDS版へ移行済み
+- Node.js LambdaとAPI Gatewayを経由した商品一覧取得まで動作確認済み
+- その他のAPIは引き続きDynamoDBを使用
+- Python版の `purchasing-products-api` は、RDS移行中の比較・検証用として残している
+
+> **注意:** 現在の `deploy/deploy.sh` はDynamoDB版の構築手順であり、RDS用のVPC・環境変数・API Gateway設定を再現しない。RDS対応が完了するまでは、RDS版のデプロイには使用しないこと。
