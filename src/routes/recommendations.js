@@ -1,5 +1,5 @@
 const express = require('express');
-const db = require('../dynamo');
+const db = require('../postgres');
 
 const router = express.Router();
 
@@ -20,24 +20,14 @@ router.post('/', async (req, res, next) => {
       return res.status(400).json({ error: 'items (array) is required' });
     }
 
-    const generated_at = new Date().toISOString();
     for (const item of items) {
-      const { product_code, current_stock, last_cycle_consumption, predicted_consumption, recommended_qty, purchase_needed } = item;
-      if (product_code == null || recommended_qty == null) {
+      if (item.product_code == null || item.recommended_qty == null) {
         return res.status(400).json({ error: 'product_code and recommended_qty are required for each item' });
       }
-      await db.putRecommendation({
-        product_code: Number(product_code),
-        current_stock: current_stock ?? null,
-        last_cycle_consumption: last_cycle_consumption ?? null,
-        predicted_consumption: predicted_consumption ?? null,
-        recommended_qty,
-        purchase_needed: purchase_needed ?? recommended_qty > 0,
-        generated_at,
-      });
+      await db.upsertRecommendation(item);
     }
 
-    res.status(201).json({ saved: items.length, generated_at });
+    res.status(201).json({ saved: items.length, generated_at: new Date().toISOString() });
   } catch (err) {
     next(err);
   }

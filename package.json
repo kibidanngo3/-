@@ -7,7 +7,9 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test:rds-products": "node scripts/test-postgres-products.js"
+    "test:rds-products": "node scripts/test-postgres-products.js",
+    "db:init": "node scripts/init-postgres-schema.js",
+    "db:seed": "node scripts/seed-postgres.js"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1088.0",

@@ -1,5 +1,5 @@
 const express = require('express');
-const db = require('../dynamo');
+const db = require('../postgres');
 
 const router = express.Router();
 
@@ -27,14 +27,11 @@ router.post('/', async (req, res, next) => {
       return res.status(400).json({ error: 'record_date, product_code, stock_count are required' });
     }
 
-    const product = await db.getProduct(product_code);
-    if (!product) {
+    if (!(await db.productExists(product_code))) {
       return res.status(404).json({ error: 'product not found' });
     }
 
-    const record_id = Date.now();
-    const record = { record_id, record_date, product_code: Number(product_code), stock_count };
-    await db.putStockRecord(record);
+    const record = await db.upsertStockRecord({ record_date, product_code, stock_count });
     res.status(201).json(record);
   } catch (err) {
     next(err);

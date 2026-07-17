@@ -1,5 +1,5 @@
 const express = require('express');
-const db = require('../dynamo');
+const db = require('../postgres');
 
 const router = express.Router();
 
@@ -23,9 +23,8 @@ router.post('/', async (req, res, next) => {
       return res.status(409).json({ error: 'genre_name already exists' });
     }
 
-    const genre_id = genres.reduce((max, g) => Math.max(max, g.genre_id), 0) + 1;
-    await db.putGenre({ genre_id, genre_name });
-    res.status(201).json({ genre_id, genre_name });
+    const genre = await db.createGenre(genre_name);
+    res.status(201).json(genre);
   } catch (err) {
     next(err);
   }

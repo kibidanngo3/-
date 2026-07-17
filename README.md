@@ -5,17 +5,18 @@
 ## デプロイ済みAPI
 
 ```
-https://1acuynf6vk.execute-api.us-east-1.amazonaws.com
+RDS版（現行）:            https://vntb888c53.execute-api.us-east-1.amazonaws.com
+旧DynamoDB版（ロールバック用）: https://1acuynf6vk.execute-api.us-east-1.amazonaws.com
 ```
 
-AWS Academy Learner Lab上に構築（API Gateway + Lambda + DynamoDB）。**Labセッションが切れるとリソースが消える場合があるため、動かない時は [docs/aws-todo.md](docs/aws-todo.md) の手順で `./deploy/deploy.sh` を再実行してください。**
+AWS Academy Learner Lab上に構築。**Labセッションが切れるとリソースが消える／認証情報が失効する場合があるため、動かない時は [docs/rds-migration.md](docs/rds-migration.md) を参照して再デプロイしてください。**
 
 ## 役割分担
 
 | 担当 | 内容 | 詳細 |
 | --- | --- | --- |
 | ①フロントエンド | 画面（商品一覧・在庫入力・予測結果表示） | [docs/ui-todo.md](docs/ui-todo.md) |
-| ②バックエンド（API） | このリポジトリの `src/` 一式・AWSデプロイ | [API.md](API.md) / [docs/aws-todo.md](docs/aws-todo.md) |
+| ②バックエンド（API） | このリポジトリの `src/` 一式・AWSデプロイ | [API.md](API.md) / [docs/rds-migration.md](docs/rds-migration.md) |
 | ③データベース | テーブル設計・マスタデータ | [docs/db.md](docs/db.md) |
 | ④AI・需要予測 | 推奨購買数量の算出モデル | [docs/ai.md](docs/ai.md) |
 | ⑤AWS・インフラ | 本番環境構築（②が一旦実装。相談歓迎） | [docs/aws-todo.md](docs/aws-todo.md) |
@@ -30,14 +31,18 @@ kobai-bu-api/
 │   ├── app.js             # Expressアプリ本体（ローカル・Lambda共通）
 │   ├── server.js          # ローカル起動用エントリポイント
 │   ├── lambda.js          # Lambda用エントリポイント
-│   ├── dynamo.js          # DynamoDBアクセス層
+│   ├── postgres.js        # RDS(PostgreSQL)アクセス層 ← 現行
+│   ├── dynamo.js          # DynamoDBアクセス層 ← ロールバック用に残置
 │   ├── csv.js
 │   └── routes/
-├── deploy/                # AWSデプロイ用スクリプト
-│   ├── create-tables.sh    # DynamoDBテーブル作成
-│   └── deploy.sh           # Lambda + API Gatewayの作成/更新
 ├── scripts/
-│   └── seed-dynamodb.js    # db/master/*.csv をDynamoDBへ投入
+│   ├── schema.sql              # RDSのテーブル定義
+│   ├── init-postgres-schema.js # schema.sqlを適用
+│   ├── seed-postgres.js        # db/master/*.csv をRDSへ投入
+│   └── seed-dynamodb.js        # （旧）DynamoDB版のシード
+├── deploy/                # DynamoDB版のAWSデプロイ用スクリプト（RDS版はdocs/rds-migration.md参照）
+│   ├── create-tables.sh
+│   └── deploy.sh
 ├── db/                    # DB班の成果物
 │   ├── er_diagram_final.png
 │   └── master/              # マスタCSV
@@ -49,11 +54,13 @@ kobai-bu-api/
 
 ## ローカルでの動かし方
 
-DynamoDB（AWS実データ）に対して動くので、AWS認証情報（`aws configure`）が必要です。
+RDS(PostgreSQL)に対して動くので、接続情報を環境変数で渡します（`.env.example`参照）。
 
 ```bash
 npm install
-export AWS_REGION=us-east-1
+cp .env.example .env   # DB_HOST等を実際のRDSエンドポイントに書き換える
+npm run db:init         # テーブル作成（初回のみ）
+npm run db:seed         # マスタデータ投入（初回のみ）
 npm start
 # http://localhost:3000 で起動
 ```
@@ -62,25 +69,13 @@ npm start
 
 起動すると `http://localhost:3000/` に確認用の簡易UI（`public/index.html`）も配信される（商品一覧・在庫/仕入れ記録フォーム・AI推奨発注数の表示）。本番のUIはフロント担当が別途作成する想定。
 
-## AWSへのデプロイ
+## AWSへのデプロイ（RDS版）
 
-[docs/aws-todo.md](docs/aws-todo.md) を参照。
+[docs/rds-migration.md](docs/rds-migration.md) を参照。VPC内のLambda・RDS接続情報の設定が必要なため、DynamoDB版の`deploy/deploy.sh`とは手順が異なる。
 
 ## 現在の状態
 
-- API・DynamoDBスキーマ・マスタデータ投入・AWSデプロイまで実装・動作確認済み
+- 全API（genres / products / price-revisions / purchases / stock-records / recommendations）をRDS(PostgreSQL)へ移行済み
 - AI予測（`ai/purchase_prediction.py`）はAPIと連携済み（`POST /api/recommendations`）。ただし本番の在庫記録がまだ蓄積されていないため、現状はAI班のダミーデータに基づく参考値（詳細: [docs/ai.md](docs/ai.md)）
 - 確認用の簡易UIあり（`public/index.html`）。本番のフロントは未着手
-
-## RDS移行状況
-
-既存APIをDynamoDBからAmazon RDS for PostgreSQLへ段階的に移行中。
-
-移行・デプロイ手順: [docs/rds-migration.md](docs/rds-migration.md)
-
-- `GET /api/products` は `src/postgres.js` を使用するRDS版へ移行済み
-- Node.js LambdaとAPI Gatewayを経由した商品一覧取得まで動作確認済み
-- その他のAPIは引き続きDynamoDBを使用
-- Python版の `purchasing-products-api` は、RDS移行中の比較・検証用として残している
-
-> **注意:** 現在の `deploy/deploy.sh` はDynamoDB版の構築手順であり、RDS用のVPC・環境変数・API Gateway設定を再現しない。RDS対応が完了するまでは、RDS版のデプロイには使用しないこと。
+- DynamoDB版は`src/dynamo.js`・`deploy/`配下にロールバック用として残置
