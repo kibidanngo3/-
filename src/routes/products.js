@@ -1,14 +1,35 @@
 const express = require('express');
 const db = require('../dynamo');
-const postgres = require('../postgres');
 
 const router = express.Router();
 
 router.get('/', async (req, res, next) => {
   try {
     const { genre_id } = req.query;
-    const products = await postgres.listProducts(genre_id);
-    res.json(products);
+    const [products, genres] = await Promise.all([db.listProducts(genre_id), db.listGenres()]);
+    const genreMap = new Map(genres.map((g) => [g.genre_id, g.genre_name]));
+
+    const results = await Promise.all(products.map(async (p) => {
+      const [latestPrice, latestStock] = await Promise.all([
+        db.getLatestPriceRevision(p.product_code),
+        db.getLatestStockRecord(p.product_code),
+      ]);
+      return {
+        product_code: p.product_code,
+        product_name: p.product_name,
+        genre_id: p.genre_id,
+        genre_name: genreMap.get(p.genre_id) ?? null,
+        temp_zone: p.temp_zone ?? null,
+        container: p.container ?? null,
+        volume_ml: p.volume_ml ?? null,
+        current_price: latestPrice?.price ?? null,
+        price_effective_date: latestPrice?.effective_date ?? null,
+        current_stock: latestStock?.stock_count ?? null,
+        stock_recorded_at: latestStock?.record_date ?? null,
+      };
+    }));
+
+    res.json(results);
   } catch (err) {
     next(err);
   }
