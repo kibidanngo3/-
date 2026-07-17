@@ -42,20 +42,16 @@ kobai-bu-api/
 │   ├── app.js             # Expressアプリ本体（ローカル・Lambda共通）
 │   ├── server.js          # ローカル起動用エントリポイント
 │   ├── lambda.js          # Lambda用エントリポイント
-│   ├── postgres.js        # RDS(PostgreSQL)アクセス層 ← 現行
-│   ├── dynamo.js          # DynamoDBアクセス層 ← ロールバック用に残置
+│   ├── postgres.js        # RDS(PostgreSQL)アクセス層
 │   ├── csv.js
 │   └── routes/
 ├── scripts/
 │   ├── schema.sql              # RDSのテーブル定義
 │   ├── init-postgres-schema.js # schema.sqlを適用
-│   ├── seed-postgres.js        # db/master/*.csv をRDSへ投入
-│   └── seed-dynamodb.js        # （旧）DynamoDB版のシード
+│   └── seed-postgres.js        # db/master/*.csv をRDSへ投入
 ├── deploy/
-│   ├── create-rds.sh       # RDSインスタンス・VPC関連リソースの作成 ← 現行
-│   ├── deploy-rds.sh       # Lambda（VPC内）+ API Gatewayのデプロイ ← 現行
-│   ├── create-tables.sh    # （旧）DynamoDBテーブル作成
-│   └── deploy.sh           # （旧）DynamoDB版のデプロイ
+│   ├── create-rds.sh       # RDSインスタンス・VPC関連リソースの作成
+│   └── deploy-rds.sh       # Lambda（VPC内）+ API Gatewayのデプロイ
 ├── db/                    # DB班の成果物
 │   ├── er_diagram_final.png
 │   └── master/              # マスタCSV
@@ -100,4 +96,4 @@ npm run db:init && npm run db:seed
 - RDSは`kobai-bu-rds`（us-east-1、default VPC）。セキュリティグループはLambda用SGからの5432のみ許可（インターネットには公開していない）
 - AI予測（`ai/purchase_prediction.py`）はAPIと連携済み（`POST /api/recommendations`）。ただし本番の在庫記録がまだ蓄積されていないため、現状はAI班のダミーデータに基づく参考値（詳細: [docs/ai.md](docs/ai.md)）
 - 確認用の簡易UIあり（`public/index.html`）。本番のフロントは未着手
-- DynamoDB版は`src/dynamo.js`・`deploy/create-tables.sh`・`deploy/deploy.sh`にロールバック用として残置（DynamoDBテーブル自体も削除していない）
+- DynamoDB版のコード・AWS上のテーブルは移行完了に伴い削除済み

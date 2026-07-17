@@ -4,7 +4,7 @@
 - Base URL（ローカル開発時）: `http://localhost:3000`
 - 全レスポンスは JSON
 - 日付は `YYYY-MM-DD` 形式の文字列
-- データストアはAmazon RDS for PostgreSQL（全API移行・本番デプロイ済み。`src/postgres.js`、Lambdaは VPC内 → RDS）。DynamoDB版は`src/dynamo.js`にロールバック用として残置（[rds-migration.md](rds-migration.md)参照）
+- データストアはAmazon RDS for PostgreSQL（`src/postgres.js`、Lambdaは VPC内 → RDS。詳細は[rds-migration.md](rds-migration.md)参照）
 - DB班のマスタCSVは `npm run db:init && npm run db:seed` でRDSへ投入する
 
 ## ジャンル

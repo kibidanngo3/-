@@ -12,8 +12,6 @@
     "db:seed": "node scripts/seed-postgres.js"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.1088.0",
-    "@aws-sdk/lib-dynamodb": "^3.1088.0",
     "@codegenie/serverless-express": "^5.0.0",
     "cors": "^2.8.5",
     "express": "^4.19.2",
