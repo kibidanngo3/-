@@ -1,11 +1,10 @@
 # 購買部 在庫管理システム API仕様
 
-- Base URL（旧DynamoDB版・ロールバック用）: `https://1acuynf6vk.execute-api.us-east-1.amazonaws.com`
-- Base URL（RDS版）: `https://vntb888c53.execute-api.us-east-1.amazonaws.com`（要再デプロイ。[docs/rds-migration.md](docs/rds-migration.md)参照）
+- Base URL（本番・AWS）: `https://1acuynf6vk.execute-api.us-east-1.amazonaws.com`
 - Base URL（ローカル開発時）: `http://localhost:3000`
 - 全レスポンスは JSON
 - 日付は `YYYY-MM-DD` 形式の文字列
-- データストアはAmazon RDS for PostgreSQL（全API移行済み。`src/postgres.js`）。DynamoDB版は`src/dynamo.js`にロールバック用として残置
+- データストアはAmazon RDS for PostgreSQL（全API移行・本番デプロイ済み。`src/postgres.js`、Lambdaは VPC内 → RDS）。DynamoDB版は`src/dynamo.js`にロールバック用として残置（[docs/rds-migration.md](docs/rds-migration.md)参照）
 - DB班のマスタCSVは `npm run db:init && npm run db:seed` でRDSへ投入する
 
 ## ジャンル

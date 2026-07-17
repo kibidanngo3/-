@@ -5,11 +5,10 @@
 ## デプロイ済みAPI
 
 ```
-RDS版（現行）:            https://vntb888c53.execute-api.us-east-1.amazonaws.com
-旧DynamoDB版（ロールバック用）: https://1acuynf6vk.execute-api.us-east-1.amazonaws.com
+https://1acuynf6vk.execute-api.us-east-1.amazonaws.com
 ```
 
-AWS Academy Learner Lab上に構築。**Labセッションが切れるとリソースが消える／認証情報が失効する場合があるため、動かない時は [docs/rds-migration.md](docs/rds-migration.md) を参照して再デプロイしてください。**
+Lambda（VPC内）→ Amazon RDS for PostgreSQL（`kobai-bu-rds`）構成で本番稼働中。AWS Academy Learner Lab上に構築。**Labセッションが切れるとリソースが消える／認証情報が失効する場合があるため、動かない時は [docs/rds-migration.md](docs/rds-migration.md) を参照して再デプロイしてください。**
 
 ## 役割分担
 
@@ -40,9 +39,11 @@ kobai-bu-api/
 │   ├── init-postgres-schema.js # schema.sqlを適用
 │   ├── seed-postgres.js        # db/master/*.csv をRDSへ投入
 │   └── seed-dynamodb.js        # （旧）DynamoDB版のシード
-├── deploy/                # DynamoDB版のAWSデプロイ用スクリプト（RDS版はdocs/rds-migration.md参照）
-│   ├── create-tables.sh
-│   └── deploy.sh
+├── deploy/
+│   ├── create-rds.sh       # RDSインスタンス・VPC関連リソースの作成 ← 現行
+│   ├── deploy-rds.sh       # Lambda（VPC内）+ API Gatewayのデプロイ ← 現行
+│   ├── create-tables.sh    # （旧）DynamoDBテーブル作成
+│   └── deploy.sh           # （旧）DynamoDB版のデプロイ
 ├── db/                    # DB班の成果物
 │   ├── er_diagram_final.png
 │   └── master/              # マスタCSV
@@ -71,11 +72,20 @@ npm start
 
 ## AWSへのデプロイ（RDS版）
 
-[docs/rds-migration.md](docs/rds-migration.md) を参照。VPC内のLambda・RDS接続情報の設定が必要なため、DynamoDB版の`deploy/deploy.sh`とは手順が異なる。
+```bash
+export DB_MASTER_PASSWORD=<新規作成時のみ>
+./deploy/create-rds.sh   # RDSインスタンス作成（既存なら何もしない）。DB_HOSTを出力
+export DB_HOST=<create-rds.shの出力> DB_USER=kobaiadmin DB_PASSWORD=<同上>
+npm run db:init && npm run db:seed
+./deploy/deploy-rds.sh   # Lambda（VPC内）+ API Gatewayをデプロイ/更新
+```
+
+詳細・トラブルシューティングは [docs/rds-migration.md](docs/rds-migration.md) を参照。
 
 ## 現在の状態
 
-- 全API（genres / products / price-revisions / purchases / stock-records / recommendations）をRDS(PostgreSQL)へ移行済み
+- 全API（genres / products / price-revisions / purchases / stock-records / recommendations）をRDS(PostgreSQL)へ移行し、**Lambda（VPC内）→ RDSの本番構成で動作確認済み**
+- RDSは`kobai-bu-rds`（us-east-1、default VPC）。セキュリティグループはLambda用SGからの5432のみ許可（インターネットには公開していない）
 - AI予測（`ai/purchase_prediction.py`）はAPIと連携済み（`POST /api/recommendations`）。ただし本番の在庫記録がまだ蓄積されていないため、現状はAI班のダミーデータに基づく参考値（詳細: [docs/ai.md](docs/ai.md)）
 - 確認用の簡易UIあり（`public/index.html`）。本番のフロントは未着手
-- DynamoDB版は`src/dynamo.js`・`deploy/`配下にロールバック用として残置
+- DynamoDB版は`src/dynamo.js`・`deploy/create-tables.sh`・`deploy/deploy.sh`にロールバック用として残置（DynamoDBテーブル自体も削除していない）
