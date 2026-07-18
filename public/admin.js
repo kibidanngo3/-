@@ -78,6 +78,10 @@ window.addEventListener("DOMContentLoaded", () => {
     if(document.getElementById("purchaseTableBody")){
     loadPurchases();
     }
+
+    if(document.getElementById("cartTableBody")){
+    renderCart();
+    }
     if(document.getElementById("priceTableBody")){
     loadPrices();
     }
@@ -943,101 +947,182 @@ window.loadPurchases = loadPurchases;
 console.log("ここまで読み込みOK");
 
 // ======================================
-// 発注登録
+// 発注カート（入荷する商品をいったんためておく）
+// AI推奨からの一括追加と、ここでの手動追加を同じカートにまとめ、
+// 「この内容で入荷する」を押した時点でまとめて発注登録＋在庫反映する
 // ======================================
 
-async function addPurchase(){
+const CART_KEY = "kobaiCart";
 
-    const data = {
+function getCart(){
+    try{
+        return JSON.parse(localStorage.getItem(CART_KEY)) || [];
+    }catch(e){
+        return [];
+    }
+}
 
-        purchase_date:
-            document.getElementById("purchaseDate").value,
+function saveCart(cart){
+    localStorage.setItem(CART_KEY, JSON.stringify(cart));
+}
 
-        product_code:
-            Number(
-                document.getElementById("purchaseProductCode").value
-            ),
+function addToCart(item){
+    const cart = getCart();
+    cart.push(item);
+    saveCart(cart);
+    renderCart();
+}
 
-        quantity:
-            Number(
-                document.getElementById("purchaseQuantity").value
-            ),
+function removeFromCart(index){
+    const cart = getCart();
+    cart.splice(index, 1);
+    saveCart(cart);
+    renderCart();
+}
+window.removeFromCart = removeFromCart;
 
-        amount:
-            document.getElementById("purchaseAmount").value
-            ? Number(
-                document.getElementById("purchaseAmount").value
-              )
-            : null
+function renderCart(){
 
-    };
+    const tbody = document.getElementById("cartTableBody");
+
+    if(!tbody) return;
+
+    const cart = getCart();
+
+    const countEl = document.getElementById("cartCount");
+    if(countEl) countEl.textContent = cart.length;
+
+    if(cart.length === 0){
+        tbody.innerHTML = `<tr><td colspan="4">カートは空です</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = "";
+
+    cart.forEach((item, index) => {
+        tbody.innerHTML += `
+        <tr>
+            <td>${item.product_name}</td>
+            <td>${item.quantity}</td>
+            <td>${item.amount ?? "-"}</td>
+            <td>
+                <button class="action-btn" onclick="removeFromCart(${index})">削除</button>
+            </td>
+        </tr>
+        `;
+    });
+
+}
+window.renderCart = renderCart;
+
+// ------------------------------
+// 手動でカートに追加
+// ------------------------------
+function addPurchaseToCart(){
+
+    const select = document.getElementById("purchaseProductCode");
+    const productCode = select.value;
+    const productName = select.selectedOptions[0]
+        ? select.selectedOptions[0].textContent.trim()
+        : "";
+
+    const quantity = Number(
+        document.getElementById("purchaseQuantity").value
+    );
+
+    const amount =
+        document.getElementById("purchaseAmount").value
+        ? Number(document.getElementById("purchaseAmount").value)
+        : null;
 
 
-    if(!data.purchase_date || !data.product_code || !data.quantity){
+    if(!productCode || !quantity){
 
-        alert("日付・商品コード・数量を入力してください");
+        alert("商品と数量を入力してください");
 
         return;
 
     }
 
 
-    try{
+    addToCart({
+        product_code: Number(productCode),
+        product_name: productName,
+        quantity: quantity,
+        amount: amount
+    });
 
-        const res = await fetch(
-            `${API_BASE}/api/purchases`,
-            {
 
-                method:"POST",
+    // 入力欄クリア
+    document.getElementById("purchaseProductCode").value = "";
+    document.getElementById("purchaseQuantity").value = "";
+    document.getElementById("purchaseAmount").value = "";
 
-                headers:{
-                    "Content-Type":"application/json"
-                },
+}
+window.addPurchaseToCart = addPurchaseToCart;
 
-                body:JSON.stringify(data)
+// ------------------------------
+// カートの内容で入荷（発注登録＋在庫反映）を確定する
+// ------------------------------
+async function submitCart(){
 
+    const cart = getCart();
+
+    if(cart.length === 0){
+        alert("カートが空です");
+        return;
+    }
+
+    if(!confirmAction(`カート内の ${cart.length}件 を入荷登録します。よろしいですか？`)){
+        return;
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for(const item of cart){
+
+        try{
+
+            const res = await fetch(
+                `${API_BASE}/api/purchases`,
+                {
+                    method:"POST",
+                    headers:{
+                        "Content-Type":"application/json"
+                    },
+                    body: JSON.stringify({
+                        purchase_date: today,
+                        product_code: item.product_code,
+                        quantity: item.quantity,
+                        amount: item.amount ?? null
+                    })
+                }
+            );
+
+            if(res.status === 201){
+                successCount++;
+            }else{
+                failCount++;
             }
-        );
 
-
-        if(res.status === 201){
-
-            alert("発注を登録しました");
-
-
-            // 入力欄クリア
-
-            document.getElementById("purchaseDate").value="";
-            document.getElementById("purchaseProductCode").value="";
-            document.getElementById("purchaseQuantity").value="";
-            document.getElementById("purchaseAmount").value="";
-
-
-            // 一覧更新
-
-            loadPurchases();
-
-
-        }else{
-
-            const error = await res.json();
-
-            alert(error.error ?? "発注登録に失敗しました");
-
+        }catch(e){
+            console.error(e);
+            failCount++;
         }
-
-
-    }catch(e){
-
-        console.error(e);
-
-        alert("発注登録エラー");
 
     }
 
-}
+    alert(`入荷登録が完了しました（成功 ${successCount}件 / 失敗 ${failCount}件）。在庫にも反映されています。`);
 
-window.addPurchase = addPurchase;
+    saveCart([]);
+    renderCart();
+    loadPurchases();
+
+}
+window.submitCart = submitCart;
 
 // ======================================
 // 価格一覧取得
@@ -1268,63 +1353,38 @@ async function loadAnalytics(){
 window.loadAnalytics = loadAnalytics;
 
 // ======================================
-// AI推奨通り一括発注
+// AI推奨商品をまとめてカートに追加
 // ======================================
 
-async function bulkOrderFromAI(){
+function addRecommendationsToCart(){
 
     if(currentNeedBuy.length === 0){
         alert("現時点で発注が必要な商品はありません");
         return;
     }
 
-    if(!confirmAction(`AI推奨通りに ${currentNeedBuy.length}件 を一括発注登録します。よろしいですか？`)){
+    if(!confirmAction(`AI推奨の ${currentNeedBuy.length}件 をカートに追加します。よろしいですか？`)){
         return;
     }
 
-    let successCount = 0;
-    let failCount = 0;
+    const cart = getCart();
 
-    for(const item of currentNeedBuy){
+    currentNeedBuy.forEach(item => {
+        cart.push({
+            product_code: item.product_code,
+            product_name: item.product_name,
+            quantity: item.recommended_qty,
+            amount: null
+        });
+    });
 
-        try{
+    saveCart(cart);
 
-            const res = await fetch(
-                `${API_BASE}/api/purchases`,
-                {
-                    method:"POST",
-                    headers:{
-                        "Content-Type":"application/json"
-                    },
-                    body: JSON.stringify({
-                        purchase_date: item.next_order_date || new Date().toISOString().slice(0, 10),
-                        product_code: item.product_code,
-                        quantity: item.recommended_qty,
-                        amount: null
-                    })
-                }
-            );
-
-            if(res.status === 201){
-                successCount++;
-            }else{
-                failCount++;
-            }
-
-        }catch(e){
-            console.error(e);
-            failCount++;
-        }
-
-    }
-
-    alert(`一括発注登録が完了しました（成功 ${successCount}件 / 失敗 ${failCount}件）`);
-
-    loadAnalytics();
+    alert(`${currentNeedBuy.length}件をカートに追加しました。発注履歴ページでカートを確認し、「入荷する」を押してください。`);
 
 }
 
-window.bulkOrderFromAI = bulkOrderFromAI;
+window.addRecommendationsToCart = addRecommendationsToCart;
 
 
 window.changePrice = changePrice;

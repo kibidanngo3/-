@@ -25,38 +25,58 @@
 
     <div class="form-box">
 
-<h2>発注登録</h2>
-
-<input 
-    type="date" 
-    id="purchaseDate"
->
+<h2>カートに追加</h2>
 
 <select id="purchaseProductCode">
     <option value="">商品を選択</option>
 </select>
 
-<input 
-    type="number" 
+<input
+    type="number"
     id="purchaseQuantity"
     placeholder="数量"
 >
 
-<input 
-    type="number" 
+<input
+    type="number"
     id="purchaseAmount"
-    placeholder="金額">
+    placeholder="金額（任意）">
 
-<button 
+<button
     class="action-btn"
-    onclick="addPurchase()">
-    発注登録
+    onclick="addPurchaseToCart()">
+    カートに追加
 </button>
 
 </div>
 
 
-    <h2>発注一覧</h2>
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-top:32px;">
+        <h2 style="margin:0;">🛒 発注カート（<span id="cartCount">0</span>件）</h2>
+        <button class="action-btn" onclick="submitCart()">📦 この内容で入荷する</button>
+    </div>
+
+    <p style="color:#666;">AI分析ページの「推奨商品をカートに追加」と、上の手動追加をまとめてここで確認できます。入荷する商品・数量が決まったら「この内容で入荷する」を押すと、発注履歴の記録と在庫への反映が一括で行われます。</p>
+
+    <table>
+
+        <thead>
+            <tr>
+                <th>商品名</th>
+                <th>数量</th>
+                <th>金額</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+
+        <tbody id="cartTableBody">
+
+        </tbody>
+
+    </table>
+
+
+    <h2 style="margin-top:40px;">発注一覧</h2>
 
 
     <table>
