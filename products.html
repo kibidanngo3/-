@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品管理</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+
+<body>
+
+<div class="container">
+
+
+    <div class="header">
+
+        <h1>📦 商品管理</h1>
+
+        <a href="dashboard.html">
+            <button class="action-btn">
+                ← ダッシュボードへ戻る
+            </button>
+        </a>
+
+    </div>
+
+
+
+    <!-- =========================
+         商品追加
+    ========================== -->
+
+    <div class="form-box">
+
+
+        <h2>商品追加</h2>
+
+
+        <input 
+            type="text"
+            id="productName"
+            placeholder="商品名"
+        >
+
+
+
+        <select id="genreSelect">
+
+            <option value="">
+                ジャンルを選択
+            </option>
+
+            <option value="1">
+                カップ麺
+            </option>
+
+            <option value="2">
+                冷凍麺
+            </option>
+
+            <option value="3">
+                冷凍米飯
+            </option>
+
+            <option value="4">
+                冷凍軽食
+            </option>
+
+            <option value="5">
+                水・お茶
+            </option>
+
+            <option value="6">
+                炭酸
+            </option>
+
+            <option value="7">
+                コーヒー
+            </option>
+
+            <option value="8">
+                エナジードリンク
+            </option>
+
+            <option value="9">
+                その他
+            </option>
+
+        </select>
+
+
+
+
+        <select id="tempZone">
+
+            <option value="">
+                温度帯を選択
+            </option>
+
+            <option value="常温">
+                常温
+            </option>
+
+            <option value="冷蔵">
+                冷蔵
+            </option>
+
+            <option value="冷凍">
+                冷凍
+            </option>
+
+        </select>
+
+
+
+
+        <select id="container">
+
+
+            <option value="">
+                容器なし
+            </option>
+
+
+            <option value="缶">
+                缶
+            </option>
+
+
+            <option value="ペットボトル">
+                ペットボトル
+            </option>
+
+
+        </select>
+
+
+
+
+        <input
+            type="number"
+            id="volume"
+            placeholder="容量(ml)"
+        >
+
+
+
+
+        <input
+            type="number"
+            id="price"
+            placeholder="価格"
+        >
+
+
+
+
+        <button 
+            class="action-btn"
+            onclick="addProduct()"
+        >
+
+            商品登録
+
+        </button>
+
+
+    </div>
+
+
+
+
+
+
+    <!-- =========================
+         検索・ソート
+    ========================== -->
+
+
+    <div class="search-area">
+
+
+        <input
+
+            type="text"
+
+            id="productSearch"
+
+            placeholder="商品名検索"
+
+        >
+
+
+
+        <select id="sortSelect">
+
+
+            <option value="">
+                並び替え
+            </option>
+
+
+            <option value="priceAsc">
+                価格が安い順
+            </option>
+
+
+            <option value="priceDesc">
+                価格が高い順
+            </option>
+
+
+            <option value="stockAsc">
+                在庫が少ない順
+            </option>
+
+
+            <option value="stockDesc">
+                在庫が多い順
+            </option>
+
+
+        </select>
+
+
+    </div>
+
+
+
+
+
+
+    <h2>
+        商品一覧
+    </h2>
+
+
+
+
+
+    <table id="productTable">
+
+
+        <thead>
+
+
+            <tr>
+
+                <th>
+                    コード
+                </th>
+
+
+                <th>
+                    商品名
+                </th>
+
+
+                <th>
+                    ジャンル
+                </th>
+
+
+                <th>
+                    価格
+                </th>
+
+
+                <th>
+                    在庫
+                </th>
+
+
+                <th>
+                    操作
+                </th>
+
+
+            </tr>
+
+
+        </thead>
+
+
+
+
+        <tbody>
+
+
+        </tbody>
+
+
+
+
+    </table>
+
+
+
+</div>
+
+
+
+<script src="admin.js"></script>
+
+
+</body>
+</html>

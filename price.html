@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>価格管理</title>
+
+    <link rel="stylesheet" href="admin.css">
+</head>
+
+
+<body>
+
+<div class="container">
+
+
+    <!-- ヘッダー -->
+    <div class="header">
+
+        <h1>💰 価格管理</h1>
+
+
+        <a href="dashboard.html">
+            <button class="action-btn">
+                ← ダッシュボードへ戻る
+            </button>
+        </a>
+
+    </div>
+
+
+
+    <!-- 商品価格一覧 -->
+
+    <table>
+
+
+        <thead>
+
+            <tr>
+
+                <th>商品コード</th>
+
+                <th>商品名</th>
+
+                <th>ジャンル</th>
+
+                <th>現在価格</th>
+
+                <th>最終更新日</th>
+
+                <th>操作</th>
+
+            </tr>
+
+        </thead>
+
+
+
+        <tbody id="priceTableBody">
+
+            <!-- admin.jsで商品データを追加 -->
+
+        </tbody>
+
+
+    </table>
+
+
+
+</div>
+
+
+
+<script src="admin.js"></script>
+
+
+</body>
+
+</html>

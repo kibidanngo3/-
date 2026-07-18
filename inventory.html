@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在庫管理</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <h1>📋 在庫管理</h1>
+
+        <a href="dashboard.html">
+            <button class="action-btn">← ダッシュボードへ戻る</button>
+        </a>
+    </div>
+
+    <div class="form-box">
+
+    <h2>在庫更新</h2>
+
+    <input 
+        type="number" 
+        id="stockProductCode" 
+        placeholder="商品コード">
+
+    <input 
+        type="number" 
+        id="stockCount" 
+        placeholder="在庫数">
+
+    <button class="action-btn" id="updateStockBtn">
+        在庫登録
+    </button>
+
+</div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>商品コード</th>
+                <th>商品名</th>
+                <th>現在庫</th>
+                <th>在庫状況</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+
+        <tbody id="inventoryTableBody">
+
+        </tbody>
+
+    </table>
+
+</div>
+
+<script src="admin.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI分析</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <h1>🤖 AI分析・推奨発注</h1>
+
+        <a href="dashboard.html">
+            <button class="action-btn">← ダッシュボードへ戻る</button>
+        </a>
+    </div>
+
+    <div class="card-container">
+
+        <div class="card">
+            <h2>12</h2>
+            <p>要発注商品</p>
+        </div>
+
+        <div class="card">
+            <h2>230</h2>
+            <p>推奨発注数</p>
+        </div>
+
+        <div class="card">
+            <h2>2.14</h2>
+            <p>MAE</p>
+        </div>
+
+        <div class="card">
+            <h2>RF</h2>
+            <p>Random Forest</p>
+        </div>
+
+    </div>
+
+    <h2 style="margin-top:40px;">推奨発注一覧</h2>
+
+    <table>
+
+        <thead>
+            <tr>
+                <th>商品コード</th>
+                <th>現在庫</th>
+                <th>前回消費量</th>
+                <th>予測消費量</th>
+                <th>推奨発注数</th>
+                <th>判定</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            <tr>
+                <td>001</td>
+                <td>5</td>
+                <td>18</td>
+                <td>19.2</td>
+                <td>18</td>
+                <td class="low-stock">要発注</td>
+            </tr>
+
+            <tr>
+                <td>002</td>
+                <td>22</td>
+                <td>8</td>
+                <td>7.5</td>
+                <td>0</td>
+                <td class="good-stock">在庫充足</td>
+            </tr>
+
+            <tr>
+                <td>003</td>
+                <td>3</td>
+                <td>15</td>
+                <td>16.4</td>
+                <td>17</td>
+                <td class="low-stock">要発注</td>
+            </tr>
+
+            <tr>
+                <td>004</td>
+                <td>15</td>
+                <td>5</td>
+                <td>5.3</td>
+                <td>0</td>
+                <td class="good-stock">在庫充足</td>
+            </tr>
+
+        </tbody>
+
+    </table>
+
+    <h2 style="margin-top:40px;">特徴量重要度</h2>
+
+    <table>
+
+        <thead>
+            <tr>
+                <th>特徴量</th>
+                <th>重要度</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            <tr>
+                <td>前サイクル消費量 (lag1)</td>
+                <td>0.42</td>
+            </tr>
+
+            <tr>
+                <td>直近2サイクル平均</td>
+                <td>0.24</td>
+            </tr>
+
+            <tr>
+                <td>開始時在庫数</td>
+                <td>0.15</td>
+            </tr>
+
+            <tr>
+                <td>商品コード</td>
+                <td>0.09</td>
+            </tr>
+
+            <tr>
+                <td>経過日数</td>
+                <td>0.05</td>
+            </tr>
+
+            <tr>
+                <td>月</td>
+                <td>0.03</td>
+            </tr>
+
+            <tr>
+                <td>曜日</td>
+                <td>0.02</td>
+            </tr>
+
+        </tbody>
+
+    </table>
+
+</div>
+
+<script src="admin.js"></script>
+
+</body>
+</html>

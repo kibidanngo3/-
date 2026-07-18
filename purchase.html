@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>発注履歴</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+
+        <h1>🛒 発注履歴</h1>
+
+        <a href="dashboard.html">
+            <button class="action-btn">
+                ← ダッシュボードへ戻る
+            </button>
+        </a>
+
+    </div>
+
+    <div class="form-box">
+
+<h2>発注登録</h2>
+
+<input 
+    type="date" 
+    id="purchaseDate"
+>
+
+<input 
+    type="number" 
+    id="purchaseProductCode"
+    placeholder="商品コード"
+>
+
+<input 
+    type="number" 
+    id="purchaseQuantity"
+    placeholder="数量"
+>
+
+<input 
+    type="number" 
+    id="purchaseAmount"
+    placeholder="金額">
+
+<button 
+    class="action-btn"
+    onclick="addPurchase()">
+    発注登録
+</button>
+
+</div>
+
+
+    <h2>発注一覧</h2>
+
+
+    <table>
+
+        <thead>
+
+            <tr>
+                <th>発注ID</th>
+                <th>日付</th>
+                <th>商品コード</th>
+                <th>数量</th>
+                <th>金額</th>
+            </tr>
+
+        </thead>
+
+
+        <tbody id="purchaseTableBody">
+
+        </tbody>
+
+
+    </table>
+
+
+</div>
+
+
+<script src="admin.js"></script>
+
+</body>
+</html>
