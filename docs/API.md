@@ -163,7 +163,7 @@
 ```
 
 ### POST /api/purchases
-仕入れ履歴を追加。
+仕入れ履歴を追加。あわせて `purchase_date` 時点の直近在庫数に `quantity` を加算した在庫記録（stock_records）を自動登録する。
 
 リクエスト:
 ```json

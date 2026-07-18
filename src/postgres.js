@@ -233,10 +233,40 @@ async function listPurchases({ productCode, from, to } = {}) {
 
 async function createPurchase({ purchase_date, product_code, quantity, amount }) {
     const purchaseId = Date.now();
-    await pool.query(
-        'INSERT INTO purchase_history (purchase_id, purchase_date, product_code, quantity, amount) VALUES ($1, $2, $3, $4, $5)',
-        [purchaseId, purchase_date, Number(product_code), quantity, amount ?? null]
-    );
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        await client.query(
+            'INSERT INTO purchase_history (purchase_id, purchase_date, product_code, quantity, amount) VALUES ($1, $2, $3, $4, $5)',
+            [purchaseId, purchase_date, Number(product_code), quantity, amount ?? null]
+        );
+
+        // 発注登録時に在庫数へ自動加算する（発注日時点で分かっている直近在庫 + 発注数量）
+        const { rows: latestStockRows } = await client.query(
+            `SELECT stock_count FROM stock_records
+       WHERE product_code = $1 AND record_date <= $2
+       ORDER BY record_date DESC, record_id DESC LIMIT 1`,
+            [Number(product_code), purchase_date]
+        );
+        const baseStock = latestStockRows[0]?.stock_count ?? 0;
+        const newStock = baseStock + Number(quantity);
+        const stockRecordId = purchaseId + 1;
+
+        await client.query(
+            `INSERT INTO stock_records (record_id, record_date, product_code, stock_count)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (record_date, product_code) DO UPDATE SET stock_count = EXCLUDED.stock_count`,
+            [stockRecordId, purchase_date, Number(product_code), newStock]
+        );
+
+        await client.query('COMMIT');
+    } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+    } finally {
+        client.release();
+    }
     return purchaseId;
 }
 
