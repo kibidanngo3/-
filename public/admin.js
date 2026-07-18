@@ -60,6 +60,8 @@ function showMessage(message) {
 
 window.addEventListener("DOMContentLoaded", () => {
 
+    updateCartCount();
+
     if(document.getElementById("productCount")){
         loadDashboard();
     }
@@ -988,16 +990,20 @@ function removeFromCart(index){
 }
 window.removeFromCart = removeFromCart;
 
+function updateCartCount(){
+    const countEl = document.getElementById("cartCount");
+    if(countEl) countEl.textContent = getCart().length;
+}
+
 function renderCart(){
+
+    updateCartCount();
 
     const tbody = document.getElementById("cartTableBody");
 
     if(!tbody) return;
 
     const cart = getCart();
-
-    const countEl = document.getElementById("cartCount");
-    if(countEl) countEl.textContent = cart.length;
 
     if(cart.length === 0){
         tbody.innerHTML = `<tr><td colspan="4">カートは空です</td></tr>`;
@@ -1396,7 +1402,7 @@ function addRecommendationsToCart(){
 
     saveCart(cart);
 
-    alert(`${currentNeedBuy.length}件をカートに追加しました。発注履歴ページでカートを確認し、「入荷する」を押してください。`);
+    alert(`${currentNeedBuy.length}件をカートに追加しました。カートページで内容を確認し、「入荷する」を押してください。`);
 
 }
 

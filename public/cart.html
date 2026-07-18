@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>発注カート</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+
+        <h1>🛒 発注カート</h1>
+
+        <div>
+            <a href="purchase.html">
+                <button class="action-btn">← 発注履歴へ戻る</button>
+            </a>
+        </div>
+
+    </div>
+
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-top:16px;">
+        <h2 style="margin:0;">カートの中身（<span id="cartCount">0</span>件）</h2>
+        <button class="action-btn" onclick="submitCart()">📦 この内容で入荷する</button>
+    </div>
+
+    <p style="color:#666;">AI分析ページの「推奨商品をカートに追加」と、発注履歴ページの手動追加がここにまとまります。入荷する商品・数量が決まったら「この内容で入荷する」を押すと、発注履歴の記録と在庫への反映が一括で行われます。</p>
+
+    <table>
+
+        <thead>
+            <tr>
+                <th>商品名</th>
+                <th>数量</th>
+                <th>金額</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+
+        <tbody id="cartTableBody">
+
+        </tbody>
+
+    </table>
+
+</div>
+
+<script src="admin.js"></script>
+
+</body>
+</html>

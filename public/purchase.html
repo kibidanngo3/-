@@ -15,11 +15,19 @@
 
         <h1>🛒 発注履歴</h1>
 
-        <a href="dashboard.html">
-            <button class="action-btn">
-                ← ダッシュボードへ戻る
-            </button>
-        </a>
+        <div>
+            <a href="cart.html">
+                <button class="action-btn">
+                    🛒 カートを見る（<span id="cartCount">0</span>）
+                </button>
+            </a>
+
+            <a href="dashboard.html">
+                <button class="action-btn">
+                    ← ダッシュボードへ戻る
+                </button>
+            </a>
+        </div>
 
     </div>
 
@@ -46,31 +54,6 @@
 <p style="color:#666; font-size:0.9em;">金額は価格管理に登録済みの単価 × 数量で自動計算されます</p>
 
 </div>
-
-
-    <div style="display:flex; align-items:center; justify-content:space-between; margin-top:32px;">
-        <h2 style="margin:0;">🛒 発注カート（<span id="cartCount">0</span>件）</h2>
-        <button class="action-btn" onclick="submitCart()">📦 この内容で入荷する</button>
-    </div>
-
-    <p style="color:#666;">AI分析ページの「推奨商品をカートに追加」と、上の手動追加をまとめてここで確認できます。入荷する商品・数量が決まったら「この内容で入荷する」を押すと、発注履歴の記録と在庫への反映が一括で行われます。</p>
-
-    <table>
-
-        <thead>
-            <tr>
-                <th>商品名</th>
-                <th>数量</th>
-                <th>金額</th>
-                <th>操作</th>
-            </tr>
-        </thead>
-
-        <tbody id="cartTableBody">
-
-        </tbody>
-
-    </table>
 
 
     <h2 style="margin-top:40px;">発注一覧</h2>
