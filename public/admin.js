@@ -106,7 +106,8 @@ async function loadDashboard() {
 
         document.getElementById("productCount").textContent = products.length;
 
-        const lowStock = recommendations.filter(r => r.current_stock <= 10);
+        // 「現在庫」はAI分析時点のスナップショットではなく、在庫管理の実データを使う
+        const lowStock = products.filter(p => p.current_stock != null && p.current_stock <= 10);
         document.getElementById("lowStockCount").textContent = lowStock.length;
 
         const needPurchase = recommendations.filter(r => r.purchase_needed);
@@ -117,7 +118,11 @@ async function loadDashboard() {
 
         const needPurchaseWithNames = needPurchase.map(r => {
             const product = products.find(p => p.product_code === r.product_code);
-            return { ...r, product_name: product ? product.product_name : "不明" };
+            return {
+                ...r,
+                product_name: product ? product.product_name : "不明",
+                current_stock: product ? product.current_stock : null
+            };
         });
 
         createRecommendationTable(needPurchaseWithNames);
@@ -140,7 +145,7 @@ function createRecommendationTable(data) {
         tbody.innerHTML += `
         <tr>
             <td>${item.product_name}</td>
-            <td>${item.current_stock}</td>
+            <td>${item.current_stock ?? "-"}</td>
             <td>${Number(item.predicted_consumption).toFixed(1)}</td>
             <td>${item.recommended_qty}</td>
             <td>${item.next_order_date ?? "-"}</td>
@@ -1302,7 +1307,9 @@ async function loadAnalytics(){
                 return {
                     ...r,
                     product_name: product ? product.product_name : "不明",
-                    current_price: product ? product.current_price : null
+                    current_price: product ? product.current_price : null,
+                    // 「現在庫」はAI分析時点のスナップショットではなく、在庫管理の実データを使う
+                    current_stock: product ? product.current_stock : null
                 };
             });
 
