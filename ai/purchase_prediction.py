@@ -275,8 +275,9 @@ def predict_next_cycle(
     next_month = next_start.month
     next_dow = next_start.dayofweek
     days_since = int((next_start - base_date).days)
-    # 発注は14日周期のため、次回発注日は前回発注日の14日後
-    next_order_date = next_start + pd.Timedelta(days=14)
+    # 次回発注日は学習データ上の日付ではなく、実際にこの分析を実行した日から
+    # 14日周期で計算する（学習データの最終購買日を使うと常に同じ日付に固定されてしまうため）
+    next_order_date = pd.Timestamp.now().normalize() + pd.Timedelta(days=14)
 
     rows = []
     for pc in products:
