@@ -715,7 +715,7 @@ async function loadInventory(){
 
                 <td>
                     <button class="action-btn"
-                    onclick="showMessage('在庫更新機能')">
+                    onclick="editStock(${stock.product_code}, ${stock.stock_count})">
                     在庫更新
                     </button>
                 </td>
@@ -736,6 +736,22 @@ async function loadInventory(){
     }
 
 }
+
+// ======================================
+// 在庫更新（一覧の行から編集）
+// ======================================
+
+function editStock(productCode, currentCount){
+
+    document.getElementById("stockProductCode").value = productCode;
+    document.getElementById("stockCount").value = currentCount;
+
+    document.getElementById("stockCount").focus();
+    document.getElementById("stockCount").select();
+
+}
+
+window.editStock = editStock;
 
 // ======================================
 // 在庫更新
@@ -911,9 +927,11 @@ async function addPurchase(){
             ),
 
         amount:
-            Number(
+            document.getElementById("purchaseAmount").value
+            ? Number(
                 document.getElementById("purchaseAmount").value
-            )
+              )
+            : null
 
     };
 
