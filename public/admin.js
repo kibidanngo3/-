@@ -889,6 +889,8 @@ async function loadPurchases(){
         const purchases = await purchaseRes.json();
         const products = await productRes.json();
 
+        productList = products;
+
         populateProductSelect("purchaseProductCode", products);
 
 
@@ -1004,7 +1006,7 @@ function renderCart(){
         <tr>
             <td>${item.product_name}</td>
             <td>${item.quantity}</td>
-            <td>${item.amount ?? "-"}</td>
+            <td>${item.amount != null ? item.amount + "円" : "-"}</td>
             <td>
                 <button class="action-btn" onclick="removeFromCart(${index})">削除</button>
             </td>
@@ -1030,11 +1032,6 @@ function addPurchaseToCart(){
         document.getElementById("purchaseQuantity").value
     );
 
-    const amount =
-        document.getElementById("purchaseAmount").value
-        ? Number(document.getElementById("purchaseAmount").value)
-        : null;
-
 
     if(!productCode || !quantity){
 
@@ -1043,6 +1040,15 @@ function addPurchaseToCart(){
         return;
 
     }
+
+    // 価格管理に登録済みの単価から金額を自動計算する
+    const product = productList.find(
+        p => p.product_code === Number(productCode)
+    );
+    const amount =
+        product && product.current_price != null
+        ? product.current_price * quantity
+        : null;
 
 
     addToCart({
@@ -1056,7 +1062,6 @@ function addPurchaseToCart(){
     // 入力欄クリア
     document.getElementById("purchaseProductCode").value = "";
     document.getElementById("purchaseQuantity").value = "";
-    document.getElementById("purchaseAmount").value = "";
 
 }
 window.addPurchaseToCart = addPurchaseToCart;
@@ -1294,7 +1299,11 @@ async function loadAnalytics(){
             .sort((a,b) => b.recommended_qty - a.recommended_qty)
             .map(r => {
                 const product = products.find(p => p.product_code === r.product_code);
-                return { ...r, product_name: product ? product.product_name : "不明" };
+                return {
+                    ...r,
+                    product_name: product ? product.product_name : "不明",
+                    current_price: product ? product.current_price : null
+                };
             });
 
         currentNeedBuy = needBuy;
@@ -1374,7 +1383,7 @@ function addRecommendationsToCart(){
             product_code: item.product_code,
             product_name: item.product_name,
             quantity: item.recommended_qty,
-            amount: null
+            amount: item.current_price != null ? item.current_price * item.recommended_qty : null
         });
     });
 
