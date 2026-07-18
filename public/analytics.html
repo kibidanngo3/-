@@ -27,7 +27,7 @@
 
         <div class="card">
             <h2 id="analyticsTotalQty">-</h2>
-            <p>推奨発注数</p>
+            <p>次回推奨発注数</p>
         </div>
 
         <div class="card">
@@ -39,7 +39,10 @@
 
     <p id="analyticsNote" style="color:#666; margin-top:12px;"></p>
 
-    <h2 style="margin-top:40px;">推奨発注一覧</h2>
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-top:40px;">
+        <h2 style="margin:0;">次回のAI推奨発注一覧</h2>
+        <button class="action-btn" onclick="bulkOrderFromAI()">🛒 AI推奨通り一括発注</button>
+    </div>
 
     <table>
 
@@ -49,7 +52,8 @@
                 <th>現在庫</th>
                 <th>前回消費量</th>
                 <th>予測消費量</th>
-                <th>推奨発注数</th>
+                <th>次回推奨発注数</th>
+                <th>次回発注日</th>
                 <th>判定</th>
             </tr>
         </thead>
@@ -57,7 +61,7 @@
         <tbody id="analyticsTableBody">
 
             <tr>
-                <td colspan="6">読み込み中...</td>
+                <td colspan="7">読み込み中...</td>
             </tr>
 
         </tbody>

@@ -134,6 +134,7 @@ function createRecommendationTable(data) {
             <td>${item.current_stock}</td>
             <td>${Number(item.predicted_consumption).toFixed(1)}</td>
             <td>${item.recommended_qty}</td>
+            <td>${item.next_order_date ?? "-"}</td>
         </tr>
         `;
 
@@ -1155,6 +1156,8 @@ async function changePrice(productCode){
 // AI分析ページ
 // ======================================
 
+let currentNeedBuy = [];
+
 async function loadAnalytics(){
 
     try{
@@ -1168,6 +1171,8 @@ async function loadAnalytics(){
         const needBuy = recommendations
             .filter(r => r.purchase_needed)
             .sort((a,b) => b.recommended_qty - a.recommended_qty);
+
+        currentNeedBuy = needBuy;
 
         document.getElementById("analyticsNeedCount").textContent = needBuy.length;
 
@@ -1185,7 +1190,7 @@ async function loadAnalytics(){
         const tbody = document.getElementById("analyticsTableBody");
 
         if(needBuy.length === 0){
-            tbody.innerHTML = `<tr><td colspan="6">現時点で発注が必要な商品はありません</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7">現時点で発注が必要な商品はありません</td></tr>`;
             return;
         }
 
@@ -1203,6 +1208,7 @@ async function loadAnalytics(){
                 <td>${item.last_cycle_consumption ?? "-"}</td>
                 <td>${Number(item.predicted_consumption).toFixed(1)}</td>
                 <td>${item.recommended_qty}</td>
+                <td>${item.next_order_date ?? "-"}</td>
                 <td class="${statusClass}">${statusLabel}</td>
             </tr>
             `;
@@ -1220,6 +1226,65 @@ async function loadAnalytics(){
 }
 
 window.loadAnalytics = loadAnalytics;
+
+// ======================================
+// AI推奨通り一括発注
+// ======================================
+
+async function bulkOrderFromAI(){
+
+    if(currentNeedBuy.length === 0){
+        alert("現時点で発注が必要な商品はありません");
+        return;
+    }
+
+    if(!confirmAction(`AI推奨通りに ${currentNeedBuy.length}件 を一括発注登録します。よろしいですか？`)){
+        return;
+    }
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for(const item of currentNeedBuy){
+
+        try{
+
+            const res = await fetch(
+                `${API_BASE}/api/purchases`,
+                {
+                    method:"POST",
+                    headers:{
+                        "Content-Type":"application/json"
+                    },
+                    body: JSON.stringify({
+                        purchase_date: item.next_order_date || new Date().toISOString().slice(0, 10),
+                        product_code: item.product_code,
+                        quantity: item.recommended_qty,
+                        amount: null
+                    })
+                }
+            );
+
+            if(res.status === 201){
+                successCount++;
+            }else{
+                failCount++;
+            }
+
+        }catch(e){
+            console.error(e);
+            failCount++;
+        }
+
+    }
+
+    alert(`一括発注登録が完了しました（成功 ${successCount}件 / 失敗 ${failCount}件）`);
+
+    loadAnalytics();
+
+}
+
+window.bulkOrderFromAI = bulkOrderFromAI;
 
 
 window.changePrice = changePrice;

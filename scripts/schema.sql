@@ -48,5 +48,7 @@ CREATE TABLE IF NOT EXISTS recommendations (
   predicted_consumption   NUMERIC,
   recommended_qty         INTEGER NOT NULL,
   purchase_needed         BOOLEAN NOT NULL DEFAULT FALSE,
+  next_order_date         DATE,
   generated_at            TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE recommendations ADD COLUMN IF NOT EXISTS next_order_date DATE;

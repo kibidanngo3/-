@@ -14,6 +14,13 @@ const pool = new Pool({
     idleTimeoutMillis: 30000,
 });
 
+// recommendations.next_order_date（後から追加したカラム）を未適用の環境に反映する軽量マイグレーション
+pool.query(
+    'ALTER TABLE recommendations ADD COLUMN IF NOT EXISTS next_order_date DATE'
+).catch((err) => {
+    console.error('next_order_date migration failed', err);
+});
+
 function toDateStr(row, key) {
     if (!row || row[key] == null) return null;
     const d = row[key] instanceof Date ? row[key] : new Date(row[key]);
@@ -289,7 +296,7 @@ async function upsertStockRecord({ record_date, product_code, stock_count }) {
 async function listRecommendations() {
     const { rows } = await pool.query(
         `SELECT product_code, current_stock, last_cycle_consumption, predicted_consumption,
-            recommended_qty, purchase_needed, generated_at
+            recommended_qty, purchase_needed, TO_CHAR(next_order_date, 'YYYY-MM-DD') AS next_order_date, generated_at
      FROM recommendations ORDER BY recommended_qty DESC`
     );
     return rows;
@@ -298,14 +305,15 @@ async function listRecommendations() {
 async function upsertRecommendation(rec) {
     await pool.query(
         `INSERT INTO recommendations
-       (product_code, current_stock, last_cycle_consumption, predicted_consumption, recommended_qty, purchase_needed, generated_at)
-     VALUES ($1, $2, $3, $4, $5, $6, now())
+       (product_code, current_stock, last_cycle_consumption, predicted_consumption, recommended_qty, purchase_needed, next_order_date, generated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, now())
      ON CONFLICT (product_code) DO UPDATE SET
        current_stock = EXCLUDED.current_stock,
        last_cycle_consumption = EXCLUDED.last_cycle_consumption,
        predicted_consumption = EXCLUDED.predicted_consumption,
        recommended_qty = EXCLUDED.recommended_qty,
        purchase_needed = EXCLUDED.purchase_needed,
+       next_order_date = EXCLUDED.next_order_date,
        generated_at = now()`,
         [
             Number(rec.product_code),
@@ -314,6 +322,7 @@ async function upsertRecommendation(rec) {
             rec.predicted_consumption ?? null,
             rec.recommended_qty,
             rec.purchase_needed ?? rec.recommended_qty > 0,
+            rec.next_order_date ?? null,
         ]
     );
 }

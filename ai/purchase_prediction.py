@@ -275,6 +275,8 @@ def predict_next_cycle(
     next_month = next_start.month
     next_dow = next_start.dayofweek
     days_since = int((next_start - base_date).days)
+    # 発注は14日周期のため、次回発注日は前回発注日の14日後
+    next_order_date = next_start + pd.Timedelta(days=14)
 
     rows = []
     for pc in products:
@@ -307,6 +309,7 @@ def predict_next_cycle(
                 "予測消費量_次14日": round(pred, 1),
                 "推奨購買数量": rec_qty,
                 "購買要否": "要購買" if rec_qty > 0 else "在庫充足",
+                "次回発注日": next_order_date.strftime("%Y-%m-%d"),
             }
         )
 
@@ -356,6 +359,7 @@ def post_recommendations(result_df: pd.DataFrame) -> None:
             "predicted_consumption": float(row["予測消費量_次14日"]),
             "recommended_qty": int(row["推奨購買数量"]),
             "purchase_needed": row["購買要否"] == "要購買",
+            "next_order_date": row["次回発注日"],
         }
         for _, row in result_df.iterrows()
     ]
