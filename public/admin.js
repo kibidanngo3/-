@@ -1177,6 +1177,10 @@ async function loadPrices(){
                 <td>${item.product_name}</td>
 
                 <td>
+                    ${item.genre_name ?? "-"}
+                </td>
+
+                <td>
                     ${item.current_price ?? "-"}円
                 </td>
 
