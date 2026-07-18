@@ -82,6 +82,10 @@ window.addEventListener("DOMContentLoaded", () => {
     loadPrices();
     }
 
+    if(document.getElementById("analyticsTableBody")){
+    loadAnalytics();
+    }
+
 });
 
 async function loadDashboard() {
@@ -1128,6 +1132,76 @@ async function changePrice(productCode){
     }
 
 }
+
+// ======================================
+// AI分析ページ
+// ======================================
+
+async function loadAnalytics(){
+
+    try{
+
+        const res = await fetch(
+            `${API_BASE}/api/recommendations`
+        );
+
+        const recommendations = await res.json();
+
+        const needBuy = recommendations
+            .filter(r => r.purchase_needed)
+            .sort((a,b) => b.recommended_qty - a.recommended_qty);
+
+        document.getElementById("analyticsNeedCount").textContent = needBuy.length;
+
+        const total = needBuy.reduce((sum, r) => sum + r.recommended_qty, 0);
+        document.getElementById("analyticsTotalQty").textContent = total;
+
+        const note = document.getElementById("analyticsNote");
+        if(recommendations.length === 0){
+            note.textContent = "まだAIの算出結果がありません";
+        }else{
+            const generatedAt = new Date(recommendations[0].generated_at).toLocaleString("ja-JP");
+            note.textContent = `算出日時: ${generatedAt}`;
+        }
+
+        const tbody = document.getElementById("analyticsTableBody");
+
+        if(needBuy.length === 0){
+            tbody.innerHTML = `<tr><td colspan="6">現時点で発注が必要な商品はありません</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = "";
+
+        needBuy.forEach(item => {
+
+            const statusClass = item.purchase_needed ? "low-stock" : "good-stock";
+            const statusLabel = item.purchase_needed ? "要発注" : "在庫充足";
+
+            tbody.innerHTML += `
+            <tr>
+                <td>${item.product_code}</td>
+                <td>${item.current_stock ?? "-"}</td>
+                <td>${item.last_cycle_consumption ?? "-"}</td>
+                <td>${Number(item.predicted_consumption).toFixed(1)}</td>
+                <td>${item.recommended_qty}</td>
+                <td class="${statusClass}">${statusLabel}</td>
+            </tr>
+            `;
+
+        });
+
+    }catch(e){
+
+        console.error(e);
+
+        alert("AI分析データの取得に失敗しました");
+
+    }
+
+}
+
+window.loadAnalytics = loadAnalytics;
 
 
 window.changePrice = changePrice;

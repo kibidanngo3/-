@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI分析</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <h1>🤖 AI分析・推奨発注</h1>
+
+        <a href="dashboard.html">
+            <button class="action-btn">← ダッシュボードへ戻る</button>
+        </a>
+    </div>
+
+    <div class="card-container">
+
+        <div class="card">
+            <h2 id="analyticsNeedCount">-</h2>
+            <p>要発注商品</p>
+        </div>
+
+        <div class="card">
+            <h2 id="analyticsTotalQty">-</h2>
+            <p>推奨発注数</p>
+        </div>
+
+        <div class="card">
+            <h2>RF</h2>
+            <p>Random Forest</p>
+        </div>
+
+    </div>
+
+    <p id="analyticsNote" style="color:#666; margin-top:12px;"></p>
+
+    <h2 style="margin-top:40px;">推奨発注一覧</h2>
+
+    <table>
+
+        <thead>
+            <tr>
+                <th>商品コード</th>
+                <th>現在庫</th>
+                <th>前回消費量</th>
+                <th>予測消費量</th>
+                <th>推奨発注数</th>
+                <th>判定</th>
+            </tr>
+        </thead>
+
+        <tbody id="analyticsTableBody">
+
+            <tr>
+                <td colspan="6">読み込み中...</td>
+            </tr>
+
+        </tbody>
+
+    </table>
+
+</div>
+
+<script src="admin.js"></script>
+
+</body>
+</html>

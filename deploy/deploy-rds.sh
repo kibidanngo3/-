@@ -25,7 +25,7 @@ rm -rf build-rds function-rds.zip
 mkdir -p build-rds/src/routes build-rds/public
 cp src/*.js build-rds/src/
 cp src/routes/*.js build-rds/src/routes/
-cp public/index.html build-rds/public/ 2>/dev/null || true
+cp -r public/. build-rds/public/ 2>/dev/null || true
 cp package.json package-lock.json build-rds/
 (cd build-rds && npm install --omit=dev --no-audit --no-fund)
 (cd build-rds && powershell -NoProfile -Command "Compress-Archive -Path * -DestinationPath ../function-rds.zip -Force")
