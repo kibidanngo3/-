@@ -111,7 +111,12 @@ async function loadDashboard() {
         const total = needPurchase.reduce((sum, r) => sum + r.recommended_qty, 0);
         document.getElementById("recommendTotal").textContent = total;
 
-        createRecommendationTable(needPurchase);
+        const needPurchaseWithNames = needPurchase.map(r => {
+            const product = products.find(p => p.product_code === r.product_code);
+            return { ...r, product_name: product ? product.product_name : "不明" };
+        });
+
+        createRecommendationTable(needPurchaseWithNames);
 
     } catch (e) {
         console.error(e);
@@ -130,7 +135,7 @@ function createRecommendationTable(data) {
 
         tbody.innerHTML += `
         <tr>
-            <td>${item.product_code}</td>
+            <td>${item.product_name}</td>
             <td>${item.current_stock}</td>
             <td>${Number(item.predicted_consumption).toFixed(1)}</td>
             <td>${item.recommended_qty}</td>
@@ -220,11 +225,6 @@ function displayProducts(products){
         tbody.innerHTML += `
 
         <tr>
-
-
-            <td>
-                ${product.product_code}
-            </td>
 
 
             <td>
@@ -423,6 +423,33 @@ async function loadGenres(){
         console.error(e);
         alert("ジャンル取得に失敗しました");
 
+    }
+
+}
+
+// ------------------------------
+// 商品コード入力欄を商品名の選択式にする共通ヘルパー
+// ------------------------------
+function populateProductSelect(selectId, products){
+
+    const select = document.getElementById(selectId);
+
+    if(!select) return;
+
+    const currentValue = select.value;
+
+    select.innerHTML = `<option value="">商品を選択</option>`;
+
+    products.forEach(product => {
+        select.innerHTML += `
+            <option value="${product.product_code}">
+                ${product.product_name}
+            </option>
+        `;
+    });
+
+    if(currentValue){
+        select.value = currentValue;
     }
 
 }
@@ -666,6 +693,7 @@ async function loadInventory(){
         const stocks = await stockRes.json();
         const products = await productRes.json();
 
+        populateProductSelect("stockProductCode", products);
 
         const tbody = document.getElementById("inventoryTableBody");
 
@@ -703,8 +731,6 @@ async function loadInventory(){
             tbody.innerHTML += `
 
             <tr>
-
-                <td>${stock.product_code}</td>
 
                 <td>${name}</td>
 
@@ -850,12 +876,16 @@ async function loadPurchases(){
 
     try{
 
-        const res = await fetch(
-            `${API_BASE}/api/purchases`
-        );
+        const [purchaseRes, productRes] = await Promise.all([
+            fetch(`${API_BASE}/api/purchases`),
+            fetch(`${API_BASE}/api/products`)
+        ]);
 
 
-        const purchases = await res.json();
+        const purchases = await purchaseRes.json();
+        const products = await productRes.json();
+
+        populateProductSelect("purchaseProductCode", products);
 
 
         const tbody = document.getElementById(
@@ -871,6 +901,12 @@ async function loadPurchases(){
 
         purchases.forEach(item => {
 
+            const product = products.find(
+                p => p.product_code === item.product_code
+            );
+
+            const name = product ? product.product_name : "不明";
+
 
             tbody.innerHTML += `
 
@@ -880,7 +916,7 @@ async function loadPurchases(){
 
                 <td>${item.purchase_date}</td>
 
-                <td>${item.product_code}</td>
+                <td>${name}</td>
 
                 <td>${item.quantity}</td>
 
@@ -1037,8 +1073,6 @@ async function loadPrices(){
 
             <tr>
 
-                <td>${item.product_code}</td>
-
                 <td>${item.product_name}</td>
 
                 <td>
@@ -1162,15 +1196,21 @@ async function loadAnalytics(){
 
     try{
 
-        const res = await fetch(
-            `${API_BASE}/api/recommendations`
-        );
+        const [recommendRes, productRes] = await Promise.all([
+            fetch(`${API_BASE}/api/recommendations`),
+            fetch(`${API_BASE}/api/products`)
+        ]);
 
-        const recommendations = await res.json();
+        const recommendations = await recommendRes.json();
+        const products = await productRes.json();
 
         const needBuy = recommendations
             .filter(r => r.purchase_needed)
-            .sort((a,b) => b.recommended_qty - a.recommended_qty);
+            .sort((a,b) => b.recommended_qty - a.recommended_qty)
+            .map(r => {
+                const product = products.find(p => p.product_code === r.product_code);
+                return { ...r, product_name: product ? product.product_name : "不明" };
+            });
 
         currentNeedBuy = needBuy;
 
@@ -1203,7 +1243,7 @@ async function loadAnalytics(){
 
             tbody.innerHTML += `
             <tr>
-                <td>${item.product_code}</td>
+                <td>${item.product_name}</td>
                 <td>${item.current_stock ?? "-"}</td>
                 <td>${item.last_cycle_consumption ?? "-"}</td>
                 <td>${Number(item.predicted_consumption).toFixed(1)}</td>

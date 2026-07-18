@@ -22,12 +22,11 @@
 
     <h2>在庫更新</h2>
 
-    <input 
-        type="number" 
-        id="stockProductCode" 
-        placeholder="商品コード">
+    <select id="stockProductCode">
+        <option value="">商品を選択</option>
+    </select>
 
-    <input 
+    <input
         type="number" 
         id="stockCount" 
         placeholder="在庫数">
@@ -41,7 +40,6 @@
     <table>
         <thead>
             <tr>
-                <th>商品コード</th>
                 <th>商品名</th>
                 <th>現在庫</th>
                 <th>在庫状況</th>
