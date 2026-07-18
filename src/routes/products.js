@@ -75,6 +75,9 @@ router.delete('/:code', async (req, res, next) => {
     }
     res.status(204).send();
   } catch (err) {
+    if (err.isConflict) {
+      return res.status(409).json({ error: '関連する仕入れ履歴・在庫記録・売値改定履歴があるため削除できません' });
+    }
     next(err);
   }
 });

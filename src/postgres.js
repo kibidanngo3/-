@@ -152,11 +152,21 @@ async function updateProduct(productCode, fields) {
 }
 
 async function deleteProduct(productCode) {
-    const { rowCount } = await pool.query(
-        'DELETE FROM products WHERE product_code = $1',
-        [Number(productCode)]
-    );
-    return rowCount > 0;
+    try {
+        const { rowCount } = await pool.query(
+            'DELETE FROM products WHERE product_code = $1',
+            [Number(productCode)]
+        );
+        return rowCount > 0;
+    } catch (err) {
+        // 23503 = foreign_key_violation（売値改定履歴・仕入れ履歴・在庫記録・AI推奨のいずれかが紐づいている）
+        if (err.code === '23503') {
+            const conflictErr = new Error('product has related records and cannot be deleted');
+            conflictErr.isConflict = true;
+            throw conflictErr;
+        }
+        throw err;
+    }
 }
 
 async function productExists(productCode) {
