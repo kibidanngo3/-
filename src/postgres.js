@@ -81,7 +81,8 @@ async function listProducts(genreId) {
       TO_CHAR(
         latest_stock.record_date,
         'YYYY-MM-DD'
-      ) AS stock_recorded_at
+      ) AS stock_recorded_at,
+      purchase_cost.avg_unit_cost AS avg_purchase_unit_cost
     FROM products AS p
     LEFT JOIN genres AS g
       ON g.genre_id = p.genre_id
@@ -107,6 +108,17 @@ async function listProducts(genreId) {
         sr.record_id DESC
       LIMIT 1
     ) AS latest_stock ON TRUE
+    LEFT JOIN LATERAL (
+      -- 仕入単価 = 過去の仕入金額合計 ÷ 仕入数量合計（金額が記録されている発注のみ対象）
+      SELECT
+        CASE WHEN SUM(ph.quantity) > 0
+          THEN SUM(ph.amount)::numeric / SUM(ph.quantity)
+          ELSE NULL
+        END AS avg_unit_cost
+      FROM purchase_history AS ph
+      WHERE ph.product_code = p.product_code
+        AND ph.amount IS NOT NULL
+    ) AS purchase_cost ON TRUE
     WHERE (
       $1::integer IS NULL
       OR p.genre_id = $1::integer

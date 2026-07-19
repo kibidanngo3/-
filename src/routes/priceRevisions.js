@@ -18,6 +18,10 @@ router.post('/', async (req, res, next) => {
       return res.status(400).json({ error: 'product_code and effective_date are required' });
     }
 
+    if (price != null && (typeof price !== 'number' || Number.isNaN(price) || price < 0)) {
+      return res.status(400).json({ error: 'price must be 0 or greater' });
+    }
+
     if (!(await db.productExists(product_code))) {
       return res.status(404).json({ error: 'product not found' });
     }

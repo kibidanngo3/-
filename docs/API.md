@@ -55,12 +55,14 @@
     "current_price": 250,
     "price_effective_date": "2025-01-09",
     "current_stock": null,
-    "stock_recorded_at": null
+    "stock_recorded_at": null,
+    "avg_purchase_unit_cost": 83.33
   }
 ]
 ```
 
 `container` / `volume_ml` は飲料以外の商品では `null`。`current_price` / `current_stock` は対応する記録が無ければ `null`。
+`avg_purchase_unit_cost` は過去の`purchase_history`（`amount`が入力されている行のみ）から算出した仕入平均単価（仕入金額合計 ÷ 仕入数量合計）。仕入実績が無ければ `null`。
 
 ### GET /api/products/:code
 商品1件を取得（売値改定履歴を含む）。

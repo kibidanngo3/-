@@ -33,6 +33,10 @@ router.post('/', async (req, res, next) => {
       return res.status(400).json({ error: 'product_name and genre_id are required' });
     }
 
+    if (price != null && (typeof price !== 'number' || Number.isNaN(price) || price < 0)) {
+      return res.status(400).json({ error: 'price must be 0 or greater' });
+    }
+
     const products = await db.listProducts();
     if (products.some((p) => p.product_name === product_name)) {
       return res.status(409).json({ error: 'product_name already exists' });

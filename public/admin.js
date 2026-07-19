@@ -260,7 +260,15 @@ function displayProducts(products){
 
             <td>
 
-                <button 
+                <button
+                class="action-btn"
+                onclick="changePrice(${product.product_code})">
+
+                価格変更
+
+                </button>
+
+                <button
                 class="action-btn"
                 onclick="deleteProduct(${product.product_code})">
 
@@ -540,6 +548,17 @@ async function addProduct(){
     }
 
 
+    // 価格チェック
+
+    if(productData.price != null && productData.price < 0){
+
+        alert("価格は0以上を入力してください");
+
+        return;
+
+    }
+
+
 
 
     try{
@@ -686,6 +705,8 @@ async function deleteProduct(productCode){
     }
 
 }
+
+window.deleteProduct = deleteProduct;
 
 // ======================================
 // 在庫一覧取得
@@ -1052,13 +1073,13 @@ function addPurchaseToCart(){
 
     }
 
-    // 価格管理に登録済みの単価から金額を自動計算する
+    // 過去の仕入実績（仕入金額 ÷ 仕入数量）の平均単価から金額を自動計算する
     const product = productList.find(
         p => p.product_code === Number(productCode)
     );
     const amount =
-        product && product.current_price != null
-        ? product.current_price * quantity
+        product && product.avg_purchase_unit_cost != null
+        ? Math.round(product.avg_purchase_unit_cost * quantity)
         : null;
 
 
@@ -1235,6 +1256,11 @@ async function changePrice(productCode){
         return;
     }
 
+    if(Number.isNaN(Number(price)) || Number(price) < 0){
+        alert("価格は0以上の数値を入力してください");
+        return;
+    }
+
 
     const data = {
 
@@ -1271,6 +1297,7 @@ async function changePrice(productCode){
             alert("価格を変更しました");
 
             loadPrices();
+            loadProducts();
 
         }else{
 
@@ -1317,7 +1344,8 @@ async function loadAnalytics(){
                 return {
                     ...r,
                     product_name: product ? product.product_name : "不明",
-                    current_price: product ? product.current_price : null,
+                    // カートの金額計算用（過去の仕入実績の平均単価）
+                    avg_purchase_unit_cost: product ? product.avg_purchase_unit_cost : null,
                     // 「現在庫」はAI分析時点のスナップショットではなく、在庫管理の実データを使う
                     current_stock: product ? product.current_stock : null
                 };
@@ -1400,7 +1428,7 @@ function addRecommendationsToCart(){
             product_code: item.product_code,
             product_name: item.product_name,
             quantity: item.recommended_qty,
-            amount: item.current_price != null ? item.current_price * item.recommended_qty : null
+            amount: item.avg_purchase_unit_cost != null ? Math.round(item.avg_purchase_unit_cost * item.recommended_qty) : null
         });
     });
 
