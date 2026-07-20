@@ -92,6 +92,10 @@ window.addEventListener("DOMContentLoaded", () => {
     loadAnalytics();
     }
 
+    if(document.getElementById("saleProductCode")){
+    loadSaleProductOptions();
+    }
+
 });
 
 async function loadDashboard() {
@@ -1442,3 +1446,87 @@ window.addRecommendationsToCart = addRecommendationsToCart;
 
 
 window.changePrice = changePrice;
+
+// ======================================
+// 購入者ページ（お買い物記録）
+// ======================================
+
+async function loadSaleProductOptions(){
+
+    try{
+
+        const res = await fetch(`${API_BASE}/api/products`);
+        const products = await res.json();
+
+        populateProductSelect("saleProductCode", products);
+
+    }catch(e){
+
+        console.error(e);
+
+        alert("商品一覧の取得に失敗しました");
+
+    }
+
+}
+window.loadSaleProductOptions = loadSaleProductOptions;
+
+async function recordSale(){
+
+    const productCode = document.getElementById("saleProductCode").value;
+
+    const quantity = Number(
+        document.getElementById("saleQuantity").value
+    );
+
+    if(!productCode || !quantity || quantity < 1){
+
+        alert("商品と個数を選んでください");
+
+        return;
+
+    }
+
+    try{
+
+        const res = await fetch(
+            `${API_BASE}/api/sales`,
+            {
+                method:"POST",
+                headers:{
+                    "Content-Type":"application/json"
+                },
+                body: JSON.stringify({
+                    sale_date: new Date().toISOString().slice(0, 10),
+                    product_code: Number(productCode),
+                    quantity: quantity
+                })
+            }
+        );
+
+        const messageEl = document.getElementById("saleMessage");
+
+        if(res.status === 201){
+
+            messageEl.textContent = "記録しました。ありがとうございます！";
+
+            document.getElementById("saleProductCode").value = "";
+            document.getElementById("saleQuantity").value = "1";
+
+        }else{
+
+            const error = await res.json();
+            messageEl.style.color = "#DC2626";
+            messageEl.textContent = error.error ?? "記録に失敗しました";
+
+        }
+
+    }catch(e){
+
+        console.error(e);
+        alert("記録処理に失敗しました");
+
+    }
+
+}
+window.recordSale = recordSale;

@@ -179,6 +179,38 @@
 
 ---
 
+## 購入記録（購入者ページ）
+
+購入者（部員）が商品を持ち出した際の記録。仕入れ（`purchase_history`）とは逆に、登録すると在庫数から `quantity` を減算する（0未満にはならない）。
+
+### GET /api/sales
+購入記録一覧（新しい順）。
+
+クエリパラメータ（すべて任意）:
+- `product_code`
+- `from` / `to`（`sale_date` の範囲）
+
+```json
+[
+  { "sale_id": 1784390083753, "sale_date": "2026-07-20", "product_code": 1, "quantity": 1 }
+]
+```
+
+### POST /api/sales
+購入記録を追加。あわせて `sale_date` 時点の直近在庫数から `quantity` を減算した在庫記録（stock_records）を自動登録する。
+
+リクエスト:
+```json
+{ "sale_date": "2026-07-20", "product_code": 1, "quantity": 1 }
+```
+
+レスポンス (201): `{ "sale_id": 1784390083753 }`
+
+400: `quantity` が0以下の場合 / 必須項目が無い場合
+404: `product_code` が存在しない場合
+
+---
+
 ## 在庫変動記録
 
 ### GET /api/stock-records

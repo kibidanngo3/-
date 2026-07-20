@@ -41,6 +41,14 @@ CREATE TABLE IF NOT EXISTS stock_records (
 );
 CREATE INDEX IF NOT EXISTS idx_stock_records_product ON stock_records(product_code, record_date DESC);
 
+CREATE TABLE IF NOT EXISTS sales (
+  sale_id       BIGINT PRIMARY KEY,
+  sale_date     DATE NOT NULL,
+  product_code  INTEGER NOT NULL REFERENCES products(product_code),
+  quantity      INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_sales_product ON sales(product_code, sale_date DESC);
+
 CREATE TABLE IF NOT EXISTS recommendations (
   product_code            INTEGER PRIMARY KEY REFERENCES products(product_code),
   current_stock           INTEGER,

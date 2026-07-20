@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>お買い物記録 - 研究室購買部</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+
+<body>
+
+<div class="container" style="max-width: 480px;">
+
+    <div class="header" style="display:block;">
+        <h1>🛍️ 研究室購買部</h1>
+        <p style="color:#666; margin-top:4px;">買った商品を記録してください</p>
+    </div>
+
+    <div class="form-box">
+
+        <select id="saleProductCode" style="width:100%;">
+            <option value="">商品を選択</option>
+        </select>
+
+        <input
+            type="number"
+            id="saleQuantity"
+            placeholder="個数"
+            value="1"
+            min="1"
+            style="width:100%;"
+        >
+
+        <button
+            class="action-btn"
+            style="width:100%; margin-top:8px;"
+            onclick="recordSale()">
+            記録する
+        </button>
+
+    </div>
+
+    <p id="saleMessage" style="text-align:center; color:#16A34A; font-weight:bold;"></p>
+
+</div>
+
+<script src="admin.js"></script>
+
+</body>
+</html>

@@ -21,6 +21,19 @@ pool.query(
     console.error('next_order_date migration failed', err);
 });
 
+// sales（購入者ページで後から追加したテーブル）を未適用の環境に反映する軽量マイグレーション
+pool.query(`
+    CREATE TABLE IF NOT EXISTS sales (
+        sale_id       BIGINT PRIMARY KEY,
+        sale_date     DATE NOT NULL,
+        product_code  INTEGER NOT NULL REFERENCES products(product_code),
+        quantity      INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_sales_product ON sales(product_code, sale_date DESC);
+`).catch((err) => {
+    console.error('sales table migration failed', err);
+});
+
 function toDateStr(row, key) {
     if (!row || row[key] == null) return null;
     const d = row[key] instanceof Date ? row[key] : new Date(row[key]);
@@ -283,6 +296,72 @@ async function createPurchase({ purchase_date, product_code, quantity, amount })
 }
 
 // ============================================================
+// Sales（購入者による持ち出し記録）
+// ============================================================
+async function listSales({ productCode, from, to } = {}) {
+    const conditions = [];
+    const params = [];
+    if (productCode) {
+        params.push(Number(productCode));
+        conditions.push(`product_code = $${params.length}`);
+    }
+    if (from) {
+        params.push(from);
+        conditions.push(`sale_date >= $${params.length}`);
+    }
+    if (to) {
+        params.push(to);
+        conditions.push(`sale_date <= $${params.length}`);
+    }
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    const { rows } = await pool.query(
+        `SELECT sale_id, TO_CHAR(sale_date, 'YYYY-MM-DD') AS sale_date, product_code, quantity
+     FROM sales ${where} ORDER BY sale_date DESC, sale_id DESC`,
+        params
+    );
+    return rows;
+}
+
+async function createSale({ sale_date, product_code, quantity }) {
+    const saleId = Date.now();
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        await client.query(
+            'INSERT INTO sales (sale_id, sale_date, product_code, quantity) VALUES ($1, $2, $3, $4)',
+            [saleId, sale_date, Number(product_code), quantity]
+        );
+
+        // 購入登録時に在庫数を自動で減算する（購入日時点で分かっている直近在庫 − 購入数量、0未満にはしない）
+        const { rows: latestStockRows } = await client.query(
+            `SELECT stock_count FROM stock_records
+       WHERE product_code = $1 AND record_date <= $2
+       ORDER BY record_date DESC, record_id DESC LIMIT 1`,
+            [Number(product_code), sale_date]
+        );
+        const baseStock = latestStockRows[0]?.stock_count ?? 0;
+        const newStock = Math.max(0, baseStock - Number(quantity));
+        const stockRecordId = saleId + 1;
+
+        await client.query(
+            `INSERT INTO stock_records (record_id, record_date, product_code, stock_count)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (record_date, product_code) DO UPDATE SET stock_count = EXCLUDED.stock_count`,
+            [stockRecordId, sale_date, Number(product_code), newStock]
+        );
+
+        await client.query('COMMIT');
+    } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+    } finally {
+        client.release();
+    }
+    return saleId;
+}
+
+// ============================================================
 // Stock records
 // ============================================================
 async function listStockRecords({ productCode, from, to } = {}) {
@@ -386,6 +465,8 @@ module.exports = {
     createPriceRevision,
     listPurchases,
     createPurchase,
+    listSales,
+    createSale,
     listStockRecords,
     listCurrentStock,
     upsertStockRecord,
